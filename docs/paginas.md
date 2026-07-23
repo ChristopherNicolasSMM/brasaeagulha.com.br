@@ -59,6 +59,9 @@ site/cartão, só em JSON.
 | `/api/admin/delete-volume.php` | Exclui um volume e suas tags |
 | `/api/admin/add-collection.php` | Cria uma coleção |
 | `/api/admin/update-collection.php` | Edita uma coleção existente, incluindo inativar |
+| `/api/admin/upload-volume-image.php` | Envia uma foto pro volume (`multipart/form-data`, campo `image` + `volume_id`) |
+| `/api/admin/set-primary-image.php` | Marca uma imagem como principal (desmarca as outras do mesmo volume) |
+| `/api/admin/delete-volume-image.php` | Apaga arquivo + registro; promove outra imagem se a apagada era a principal |
 | `/api/admin/catalogo-full.php` | Como `/api/catalogo.php`, mas inclui coleções inativadas (uso exclusivo do admin) |
 | `/api/admin/save-tag.php` | Cria ou edita uma tag, incluindo inativar |
 | `/api/admin/tags-list.php` | Lista completa de tags (ativas e inativas), com contagem de uso |

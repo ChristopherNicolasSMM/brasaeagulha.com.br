@@ -119,6 +119,34 @@ campanha de marketing (backlog de tela ainda por construir).
 `UNIQUE(volume_id, email)` — pedir aviso de novo com o mesmo e-mail
 atualiza whatsapp/aniversário em vez de duplicar.
 
+## `volume_images` *(Fase B)*
+
+Fotos por volume. Arquivo físico fica em
+`public_html/img/livros/{volume_id}/{filename}` — uma pasta por
+publicação, criada automaticamente no primeiro upload
+(`ba_volume_image_dir()` em `src/images.php`). Sem foto cadastrada, o
+site mostra o selo rúnico do tipo da coleção (ᛟ/ᚠ/ᚨ/ᛃ), como sempre foi.
+
+| Coluna | Tipo | Observação |
+|---|---|---|
+| `id` | INTEGER PK | |
+| `volume_id` | TEXT | FK → `volumes.id`, `ON DELETE CASCADE` |
+| `filename` | TEXT | nome gerado (nunca o nome original enviado) |
+| `is_primary` | INTEGER (bool) | uma só por volume — a primeira imagem enviada vira principal sozinha; as seguintes não |
+| `sort_order` | INTEGER | |
+| `created_at` | TEXT | |
+
+Ao excluir a imagem que era a principal, a próxima da fila (por
+`sort_order`) é promovida automaticamente — nunca fica um volume com
+fotos e nenhuma principal.
+
+**Validação de upload** (`api/admin/upload-volume-image.php`): nunca
+confia na extensão nem no `Content-Type` enviado pelo navegador —
+`getimagesize()` abre o arquivo de verdade e só aceita JPG/PNG/WEBP/GIF
+reais, o que barra um `.php` disguised as `.jpg`. Limite de 5 MB. Como
+camada extra, `public_html/img/livros/.htaccess` bloqueia a execução de
+qualquer script nessa pasta, não importa a extensão.
+
 ## `site_settings` *(Fase 1)*
 
 Chave/valor genérico — dados do cartão de visita/vCard (telefone,
@@ -166,7 +194,6 @@ sem relação com as demais.
 Do roadmap de próximas fases — documentado aqui pra quem for
 implementar não precisar redesenhar do zero:
 
-- `volume_images` — fotos por volume (pasta própria, uma marcada como principal)
 - `customers` — cadastro de cliente (nome, e-mail, senha com hash, telefone)
 - `customer_addresses` — vários endereços por cliente, um marcado padrão
 - `orders` / `order_items` — pedidos, com preço e endereço **congelados

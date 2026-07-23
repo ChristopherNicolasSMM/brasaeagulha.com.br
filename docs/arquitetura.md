@@ -112,7 +112,23 @@ um botão de excluir que apaga a linha.
 Token gerado por sessão (`ba_csrf_token()`), comparado com
 `hash_equals()` (`ba_csrf_verify()`). Todo endpoint de escrita em
 `api/admin/*.php` exige o token no corpo da requisição — sem ele,
-`403`.
+`403`. Nos endpoints de upload (que usam `multipart/form-data`, não
+JSON), o token vem em `$_POST['csrf']` em vez do corpo JSON — é o único
+lugar onde isso muda.
+
+## Imagens de volume (`src/images.php`, a partir da Fase B)
+
+`ba_volume_image_dir($volumeId)` centraliza o caminho físico
+(`public_html/img/livros/{id}/`, criado automaticamente se não
+existir) — todo endpoint que mexe com arquivo de imagem passa por essa
+função, pra nunca ter dois jeitos diferentes de calcular o mesmo
+caminho (isso importa pra segurança: um cálculo de caminho inconsistente
+é como se abre brecha pra path traversal sem querer).
+
+Upload nunca confia em extensão nem `Content-Type` do navegador —
+`getimagesize()` abre o arquivo de verdade antes de aceitar. Nome do
+arquivo salvo é sempre gerado (`bin2hex(random_bytes(10))`), nunca o
+nome original enviado.
 
 ## Padrão dos endpoints administrativos
 

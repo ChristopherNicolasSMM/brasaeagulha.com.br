@@ -103,6 +103,14 @@ function availabilityBadgePublic(vol){
   return '';
 }
 
+function coverImageHtml(vol, col){
+  const primary = (vol.images || []).find(img => img.isPrimary) || (vol.images || [])[0];
+  if(primary){
+    return `<img src="${esc(primary.url)}" alt="" class="cover-photo" loading="lazy">`;
+  }
+  return `<span class="cover-sigil-wrap"><span class="cover-sigil" aria-hidden="true">${esc(TYPE_SIGILS[col.type] || 'ᛟ')}</span></span>`;
+}
+
 function cardTemplate(vol, col){
   const p = getPricing(vol);
   const accent = col.accentColor || '#d4af37';
@@ -110,7 +118,7 @@ function cardTemplate(vol, col){
     <article class="card" style="--accent:${esc(accent)}">
       <div class="card-cover">
         <span class="card-type-pill type-pill">${esc(TYPE_LABELS[col.type] || col.type)}</span>
-        <span class="cover-sigil-wrap"><span class="cover-sigil" aria-hidden="true">${esc(TYPE_SIGILS[col.type] || 'ᛟ')}</span></span>
+        ${coverImageHtml(vol, col)}
       </div>
       <div class="card-body">
         <p class="card-collection">${esc(col.title)}</p>
@@ -199,7 +207,7 @@ function renderBookDetail(volId){
     <a href="#colecao-${esc(col.id)}" class="back-link">← Voltar para ${esc(col.title)}</a>
     <div class="book-detail">
       <div class="book-detail-cover" style="--accent:${esc(col.accentColor)}">
-        <span class="cover-sigil-wrap"><span class="cover-sigil" aria-hidden="true">${esc(TYPE_SIGILS[col.type] || 'ᛟ')}</span></span>
+        ${coverImageHtml(vol, col)}
       </div>
       <div>
         <span class="type-pill">${esc(TYPE_LABELS[col.type] || col.type)}</span>

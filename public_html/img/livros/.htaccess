@@ -1,0 +1,8 @@
+# Pasta só de imagens enviadas pelo admin. Mesmo com a validação de
+# conteúdo no upload (getimagesize confere que é imagem de verdade),
+# esta é uma camada extra: nunca executa nada aqui, não importa a
+# extensão do arquivo.
+<FilesMatch "\.(php|phtml|php3|php4|php5|php7|pl|py|cgi|asp|aspx|sh|exe)$">
+  Require all denied
+</FilesMatch>
+Options -Indexes -ExecCGI

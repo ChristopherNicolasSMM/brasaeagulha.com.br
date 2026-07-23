@@ -143,6 +143,19 @@ function ba_ensure_schema(PDO $pdo): void
     )');
     $pdo->exec('CREATE INDEX IF NOT EXISTS idx_stock_interest_volume ON stock_interest(volume_id)');
 
+    // Fase B — fotos por volume. Arquivo físico fica em
+    // public_html/img/livros/{volume_id}/{filename} — uma pasta por
+    // publicação, uma das imagens marcada como principal (is_primary).
+    $pdo->exec('CREATE TABLE IF NOT EXISTS volume_images (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        volume_id TEXT NOT NULL REFERENCES volumes(id) ON DELETE CASCADE,
+        filename TEXT NOT NULL,
+        is_primary INTEGER DEFAULT 0,
+        sort_order INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )');
+    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_volume_images_volume ON volume_images(volume_id)');
+
     // Colunas novas em volumes (SQLite não tem "ADD COLUMN IF NOT EXISTS"
     // nativo, por isso o helper confere antes de tentar adicionar).
     ba_ensure_column($pdo, 'volumes', 'isbn', "TEXT DEFAULT ''");

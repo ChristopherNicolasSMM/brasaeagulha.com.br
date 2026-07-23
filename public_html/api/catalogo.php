@@ -47,6 +47,7 @@ foreach ($collections as $col) {
             'pageCount' => isset($vol['page_count']) && $vol['page_count'] !== null ? (int) $vol['page_count'] : null,
             'publicationDate' => $vol['publication_date'] ?? '',
             'availability' => $vol['availability'] ?? 'available',
+            'images' => ba_get_volume_images($pdo, $vol['id']),
             'author' => $author,
         ];
     }

@@ -184,6 +184,16 @@ $username = $_SESSION['admin_username'] ?? 'admin';
           <label>Data de publicação <input type="date" name="publicationDate"></label>
         </div>
       </fieldset>
+
+      <fieldset class="modal-fieldset" id="imagesFieldset" hidden>
+        <legend>Imagens</legend>
+        <div id="volumeImagesGrid" class="volume-images-grid"></div>
+        <label class="btn btn-ghost file-btn" style="margin-top:.8em;">
+          + Adicionar imagem
+          <input type="file" id="imageUploadInput" accept="image/jpeg,image/png,image/webp,image/gif" hidden>
+        </label>
+        <p class="modal-status" id="imageUploadStatus"></p>
+      </fieldset>
     </div>
     <div class="admin-modal-footer">
       <button type="button" class="btn btn-danger" id="deleteVolumeBtn" hidden>Excluir volume</button>

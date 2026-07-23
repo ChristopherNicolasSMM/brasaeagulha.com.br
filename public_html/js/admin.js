@@ -175,6 +175,85 @@ tagInputField.addEventListener('keydown', (e) => {
   }
 });
 
+/* ---------- Imagens do volume ---------- */
+function renderVolumeImages(images){
+  const grid = document.getElementById('volumeImagesGrid');
+  if(!images.length){
+    grid.innerHTML = '<p class="empty-list-hint">Nenhuma imagem ainda — sem foto, o site mostra o selo ᛟ.</p>';
+    return;
+  }
+  grid.innerHTML = images.map(img => `
+    <div class="volume-image-item${img.isPrimary ? ' is-primary' : ''}" data-image-id="${img.id}">
+      ${img.isPrimary ? '<span class="primary-tag">Principal</span>' : ''}
+      <img src="${esc(img.url)}" alt="">
+      <div class="image-actions">
+        ${!img.isPrimary ? `<button type="button" data-action="set-primary-image" data-image-id="${img.id}">Tornar principal</button>` : ''}
+        <button type="button" data-action="delete-image" data-image-id="${img.id}">Excluir</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+document.getElementById('imageUploadInput').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  const volumeId = e.target.dataset.volumeId;
+  if(!file || !volumeId) return;
+  const status = document.getElementById('imageUploadStatus');
+  status.textContent = 'Enviando...';
+  try {
+    const fd = new FormData();
+    fd.append('image', file);
+    fd.append('volume_id', volumeId);
+    fd.append('csrf', window.BA_CSRF);
+    const res = await fetch('/api/admin/upload-volume-image.php', { method: 'POST', credentials: 'same-origin', body: fd });
+    const json = await res.json();
+    if(!res.ok) throw new Error(json.error || ('Erro ' + res.status));
+    status.textContent = 'Enviada ✓';
+    setTimeout(() => status.textContent = '', 2000);
+    const found = findVolumeIn(COLLECTIONS, volumeId);
+    if(found){
+      found.vol.images = found.vol.images || [];
+      if(json.isPrimary) found.vol.images.forEach(img => img.isPrimary = false);
+      found.vol.images.push({ id: json.id, url: json.url, isPrimary: json.isPrimary });
+      renderVolumeImages(found.vol.images);
+    }
+  } catch (err){
+    status.textContent = 'Erro: ' + err.message;
+  }
+  e.target.value = '';
+});
+
+document.getElementById('volumeImagesGrid').addEventListener('click', async (e) => {
+  const setPrimaryBtn = e.target.closest('[data-action="set-primary-image"]');
+  const deleteBtn = e.target.closest('[data-action="delete-image"]');
+  const volumeId = volumeForm.elements['id'].value;
+  const found = findVolumeIn(COLLECTIONS, volumeId);
+
+  if(setPrimaryBtn){
+    try {
+      await postJSON('/api/admin/set-primary-image.php', { image_id: setPrimaryBtn.dataset.imageId });
+      if(found){
+        found.vol.images.forEach(img => img.isPrimary = (String(img.id) === setPrimaryBtn.dataset.imageId));
+        renderVolumeImages(found.vol.images);
+      }
+    } catch (err){ alert('Não foi possível: ' + err.message); }
+  }
+
+  if(deleteBtn){
+    if(!confirm('Excluir esta imagem?')) return;
+    try {
+      await postJSON('/api/admin/delete-volume-image.php', { image_id: deleteBtn.dataset.imageId });
+      if(found){
+        found.vol.images = found.vol.images.filter(img => String(img.id) !== deleteBtn.dataset.imageId);
+        if(found.vol.images.length && !found.vol.images.some(img => img.isPrimary)){
+          found.vol.images[0].isPrimary = true;
+        }
+        renderVolumeImages(found.vol.images);
+      }
+    } catch (err){ alert('Não foi possível: ' + err.message); }
+  }
+});
+
 /* ---------- Modal de volume (criação e edição) ---------- */
 const volumeModal = document.getElementById('volumeModal');
 const volumeForm = document.getElementById('volumeForm');
@@ -224,6 +303,9 @@ function openVolumeModal(volumeId, defaultCollectionId){
     document.getElementById('notifyCountInfo').textContent = n > 0
       ? `${n} pessoa${n === 1 ? '' : 's'} aguardando aviso de estoque`
       : '';
+    document.getElementById('imagesFieldset').hidden = false;
+    document.getElementById('imageUploadInput').dataset.volumeId = vol.id;
+    renderVolumeImages(vol.images || []);
   } else {
     document.getElementById('volumeModalTitle').textContent = 'Novo volume';
     document.getElementById('deleteVolumeBtn').hidden = true;
@@ -233,6 +315,7 @@ function openVolumeModal(volumeId, defaultCollectionId){
     selectedTags = [];
     renderTagChips();
     document.getElementById('notifyCountInfo').textContent = '';
+    document.getElementById('imagesFieldset').hidden = true;
   }
 
   volumeModal.showModal();
