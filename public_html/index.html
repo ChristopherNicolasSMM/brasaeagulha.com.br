@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#12283a">
+<title>Brasa &amp; Agulha Editorial — Acervo Nórdico</title>
+<meta name="description" content="Catálogo da Brasa &amp; Agulha Editorial: mitologia, tradição rúnica e ritos nórdicos.">
+<link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/img/logo-192.png">
+<link rel="apple-touch-icon" href="/img/logo-192.png">
+<meta property="og:title" content="Brasa & Agulha Editorial">
+<meta property="og:description" content="Mitologia, tradição rúnica e ritos nórdicos.">
+<meta property="og:image" content="/img/logo-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/site.css">
+</head>
+<body>
+
+<a class="skip-link" href="#main-content">Pular para o conteúdo</a>
+
+<button id="sidebarToggle" class="sidebar-toggle" aria-label="Abrir menu" aria-expanded="false" aria-controls="sidebar">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+</button>
+<div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+<aside id="sidebar" class="sidebar" aria-label="Menu lateral">
+  <div class="sidebar-brand">
+    <a href="#home" class="brand-mark">
+      <img class="brand-logo-img" src="/img/logo.png" alt="Brasa & Agulha Editorial">
+      <span class="brand-name">BRASA &amp;<br>AGULHA</span>
+    </a>
+    <p class="brand-tagline">Editorial</p>
+  </div>
+
+  <div class="sidebar-divider" aria-hidden="true">❧ ✵ ☙</div>
+
+  <nav class="sidebar-nav" aria-label="Navegação principal">
+    <a href="#home" class="nav-link" data-route="home">Início</a>
+    <a href="#catalogo" class="nav-link" data-route="catalogo">Catálogo completo</a>
+
+    <p class="nav-group-label">Coleções</p>
+    <div id="collectionsNav" class="collections-nav"></div>
+
+    <a href="#contato" class="nav-link" data-route="contato">Contato</a>
+  </nav>
+
+  <div class="sidebar-divider" aria-hidden="true">✵</div>
+
+  <div class="sidebar-tags">
+    <p class="nav-group-label">Temas</p>
+    <div id="tagCloud" class="tag-cloud"></div>
+  </div>
+
+  <div class="sidebar-footer">
+    <a href="/admin/" class="admin-link">⚙ Painel administrativo</a>
+  </div>
+</aside>
+
+<div class="main-wrapper">
+
+  <header class="topbar">
+    <span class="topbar-title">Brasa &amp; Agulha Editorial</span>
+    <form class="search-form" id="searchForm" role="search">
+      <label for="searchInput" class="visually-hidden">Buscar no acervo</label>
+      <input type="search" id="searchInput" placeholder="Buscar por título, tema ou coleção…" autocomplete="off">
+      <button type="submit" aria-label="Buscar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </button>
+    </form>
+  </header>
+
+  <main id="main-content">
+
+    <!-- ============ HOME ============ -->
+    <section id="view-home" class="view">
+      <div class="hero">
+        <p class="hero-eyebrow">Brasa &amp; Agulha Editorial</p>
+        <h1 class="hero-title">Histórias, símbolos e memória nórdica</h1>
+        <p class="hero-lede">Um acervo dedicado à mitologia, à tradição rúnica e aos ritos do Norte — apresentado com cuidado, rigor e sem pressa. Três coleções, um só fio condutor: o fogo que atravessa o inverno.</p>
+        <div class="hero-actions">
+          <a href="#catalogo" class="btn btn-primary">Consultar o acervo</a>
+          <a href="#contato" class="btn btn-ghost">Falar com a editora</a>
+        </div>
+      </div>
+
+      <div class="section-divider" aria-hidden="true">❧ ✵ ☙</div>
+
+      <div class="home-block">
+        <h2 class="block-title">As coleções</h2>
+        <div id="collectionsPreview" class="collections-preview"></div>
+      </div>
+
+      <div id="promoStrip" class="promo-strip" hidden></div>
+
+      <div class="section-divider" aria-hidden="true">✵</div>
+
+      <div class="home-block home-cta">
+        <h2 class="block-title">Ainda não sabe por onde começar?</h2>
+        <p>Escreva contando o que procura — sagas, prática ritual ou uma introdução ao Futhark — e ajudamos a encontrar o volume certo.</p>
+        <a href="#contato" class="btn btn-primary">Enviar uma pergunta</a>
+      </div>
+    </section>
+
+    <!-- ============ CATÁLOGO ============ -->
+    <section id="view-catalog" class="view">
+      <div class="view-header">
+        <h1 id="catalogTitle">Catálogo completo</h1>
+        <p id="catalogSubtitle" class="view-subtitle"></p>
+      </div>
+      <div id="activeFilters" class="active-filters"></div>
+      <div id="catalogGrid" class="catalog-grid"></div>
+      <p id="catalogEmpty" class="empty-state" hidden>Nenhum título encontrado com esses critérios. Tente outra palavra-chave ou remova o filtro de tema.</p>
+    </section>
+
+    <!-- ============ DETALHE DO LIVRO ============ -->
+    <section id="view-book" class="view">
+      <div id="bookDetailContent"></div>
+    </section>
+
+    <!-- ============ CONTATO ============ -->
+    <section id="view-contact" class="view">
+      <div class="view-header">
+        <h1>Fale com a Brasa &amp; Agulha</h1>
+        <p class="view-subtitle">Dúvidas sobre um título, pedidos, parcerias ou uma palavra sobre o que leu — escreva.</p>
+      </div>
+      <div id="contactContextBanner" class="contact-context" hidden></div>
+      <form id="contactForm" class="contact-form">
+        <label>Nome
+          <input type="text" name="name" required>
+        </label>
+        <label>E-mail
+          <input type="email" name="email" required>
+        </label>
+        <label>Assunto
+          <input type="text" name="subject" id="contactSubject" required>
+        </label>
+        <label>Mensagem
+          <textarea name="message" id="contactMessage" rows="6" required></textarea>
+        </label>
+        <button type="submit" class="btn btn-primary">Enviar mensagem</button>
+        <p class="form-hint">Ao enviar, seu programa de e-mail padrão abrirá com a mensagem pronta para envio a <span id="contactEmailDisplay"></span>.</p>
+      </form>
+
+      <div class="section-divider" aria-hidden="true">✵</div>
+
+      <div class="contact-alt">
+        <h2>Outros canais</h2>
+        <ul id="socialList" class="social-list"></ul>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-links">
+      <a href="#home">Início</a>
+      <a href="#catalogo">Catálogo</a>
+      <a href="#contato">Contato</a>
+    </div>
+    <p class="footer-copy">© <span id="footerYear"></span> Brasa &amp; Agulha Editorial. Todos os direitos reservados.</p>
+  </footer>
+</div>
+
+<script src="/js/common.js"></script>
+<script src="/js/site.js"></script>
+</body>
+</html>

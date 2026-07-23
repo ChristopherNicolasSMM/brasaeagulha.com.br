@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#12283a">
+<title>Brasa &amp; Agulha Editorial — Cartão de Visita</title>
+<meta name="description" content="Contato, redes e catálogo da Brasa & Agulha Editorial.">
+<link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32.png">
+<link rel="apple-touch-icon" href="/img/logo-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/site.css">
+<style>
+  body{
+    display:flex; align-items:flex-start; justify-content:center;
+    min-height:100vh; padding: 2.5rem 1.2rem;
+  }
+  .card-page{ width:100%; max-width:420px; text-align:center; }
+  .card-page img.avatar{
+    width:96px; height:96px; border-radius:50%; margin: 0 auto 1rem;
+    box-shadow: 0 0 0 3px rgba(212,175,55,.4), var(--shadow-1);
+  }
+  .card-page h1{ font-size:1.4rem; margin-bottom:.15em; }
+  .card-page .subtitle{ font-family:var(--font-ui); font-size:.85rem; color:var(--snow-muted); margin-bottom:1.6rem; }
+
+  .top-actions{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:.7em;
+    background:rgba(255,255,255,.03); border:1px solid rgba(212,175,55,.25);
+    border-radius:var(--radius-lg); padding:1.1rem; margin-bottom:1.6rem;
+  }
+  .top-actions button, .top-actions a{
+    display:flex; flex-direction:column; align-items:center; gap:.4em;
+    font-family:var(--font-ui); font-size:.76rem; color:var(--snow);
+    background:transparent; border:none; cursor:pointer; padding:.3em;
+  }
+  .top-actions .icon{ font-size:1.5rem; }
+  .top-actions button:hover, .top-actions a:hover{ color: var(--gold-ember); }
+
+  .link-list{ display:flex; flex-direction:column; gap:.7em; }
+  .link-list a{
+    display:flex; align-items:center; gap:.8em; text-align:left;
+    font-family:var(--font-ui); font-size:.95rem; color:var(--snow);
+    background:rgba(255,255,255,.03); border:1px solid rgba(212,175,55,.2);
+    border-radius:var(--radius); padding:.85em 1.1em; transition:border-color .15s ease, transform .15s ease;
+  }
+  .link-list a:hover{ border-color:var(--gold-ember); transform:translateY(-2px); text-decoration:none; }
+  .link-list .icon{ font-size:1.15rem; width:1.4em; text-align:center; }
+
+  .pix-copied{ font-size:.78rem; color: var(--gold-soft); margin-top:.3em; min-height:1.2em; }
+  .card-footer{ margin-top:2rem; font-family:var(--font-ui); font-size:.75rem; color:var(--snow-muted); }
+  .card-footer a{ color:var(--snow-muted); }
+</style>
+</head>
+<body>
+  <div class="card-page">
+    <img class="avatar" id="avatarImg" src="/img/logo.png" alt="Brasa & Agulha Editorial">
+    <h1 id="orgNameEl">Brasa &amp; Agulha Editorial</h1>
+    <p class="subtitle" id="subtitleEl">Editora</p>
+
+    <div class="top-actions">
+      <a href="/vcard" id="btnVcard">
+        <span class="icon" aria-hidden="true">📱</span> Salvar contato
+      </a>
+      <a href="#" id="btnWhatsapp" target="_blank" rel="noopener">
+        <span class="icon" aria-hidden="true">💬</span> WhatsApp
+      </a>
+      <button type="button" id="btnPix">
+        <span class="icon" aria-hidden="true">💰</span> Copiar PIX
+      </button>
+    </div>
+    <p class="pix-copied" id="pixStatus"></p>
+
+    <div class="link-list" id="linkList"></div>
+
+    <p class="card-footer">
+      <a href="/">brasaeagulha.com.br</a>
+    </p>
+  </div>
+
+<script>
+async function loadSettings(){
+  const res = await fetch('/api/settings.php');
+  const s = await res.json();
+
+  document.getElementById('orgNameEl').textContent = s.org_name || 'Brasa & Agulha Editorial';
+  document.getElementById('subtitleEl').textContent = s.editor_title
+    ? (s.editor_title + (s.editor_name ? ' — ' + s.editor_name : ''))
+    : 'Editora';
+  if (s.photo_url) document.getElementById('avatarImg').src = s.photo_url;
+
+  const wa = document.getElementById('btnWhatsapp');
+  if (s.whatsapp_number) {
+    const msg = encodeURIComponent(s.whatsapp_message || '');
+    wa.href = 'https://wa.me/' + s.whatsapp_number + (msg ? '?text=' + msg : '');
+  } else {
+    wa.style.display = 'none';
+  }
+
+  const pixBtn = document.getElementById('btnPix');
+  if (!s.pix_key) {
+    pixBtn.style.display = 'none';
+  } else {
+    pixBtn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(s.pix_key);
+        document.getElementById('pixStatus').textContent = 'Chave PIX copiada — cole no seu app do banco.';
+      } catch (e) {
+        document.getElementById('pixStatus').textContent = 'Chave PIX: ' + s.pix_key;
+      }
+    });
+  }
+
+  const links = [
+    { icon: '📚', label: 'Catálogo', url: s.catalogo_url },
+    { icon: '🛒', label: 'Loja', url: s.loja_url },
+    { icon: '📖', label: s.runomante_label || 'O Runomante', url: s.runomante_url },
+    { icon: '🌐', label: 'Site oficial', url: s.site_oficial_url },
+    { icon: '📸', label: 'Instagram', url: s.instagram_url },
+    { icon: '🎥', label: 'YouTube', url: s.youtube_url },
+    { icon: '📍', label: 'Localização', url: s.location_maps_url }
+  ].filter(l => l.url && l.url.trim() !== '');
+
+  const list = document.getElementById('linkList');
+  list.innerHTML = links.map(l => `
+    <a href="${l.url}" target="${l.url.startsWith('/') || l.url.startsWith('#') ? '_self' : '_blank'}" rel="noopener">
+      <span class="icon" aria-hidden="true">${l.icon}</span> ${l.label}
+    </a>
+  `).join('');
+}
+loadSettings();
+</script>
+</body>
+</html>
