@@ -191,11 +191,10 @@ function ba_ensure_seed(PDO $pdo): void
 }
 
 /**
- * Semeia os dois autores já conhecidos do projeto e liga os volumes das
- * coleções correspondentes a eles. Roda só UMA VEZ (controlado pelo
- * marcador de migração) — depois disso, é 100% edição sua: se você
- * apagar um desses autores ou trocar o autor de um volume, isso nunca
- * mais é desfeito automaticamente.
+ * Semeia o autor e liga os volumes das coleções correspondentes a ele.
+ * Roda só UMA VEZ (controlado pelo marcador de migração) — depois disso,
+ * é 100% edição sua: se você trocar o autor de um volume, isso nunca mais
+ * é desfeito automaticamente.
  */
 function ba_ensure_authors(PDO $pdo): void
 {
@@ -204,12 +203,6 @@ function ba_ensure_authors(PDO $pdo): void
     }
 
     $authors = [
-        [
-            'id' => 'kunnigr-afi',
-            'name' => 'Kunnigr Afi (o Avô Sábio)',
-            'bio' => 'Persona narrativa da Brasa & Agulha Editorial — a voz que conta, ao pé do fogo, as histórias reunidas em "As Histórias que os Ventos Trazem". Não é um pesquisador creditado, mas o veículo escolhido para transmitir mitologia e saberes nórdicos em tom oral e caloroso.',
-            'photo_url' => '',
-        ],
         [
             'id' => 'christopher-mauricio',
             'name' => 'Christopher N. S. M. Mauricio',
@@ -230,9 +223,10 @@ function ba_ensure_authors(PDO $pdo): void
     // Mapa coleção -> autor padrão, só usado pra preencher volumes que
     // ainda não têm author_id (NULL ou vazio) nesta migração única.
     $collectionAuthorMap = [
-        'historias-ventos' => 'kunnigr-afi',
-        'compendio-futhark' => 'christopher-mauricio',
-        'breviario-nordico' => 'christopher-mauricio',
+        'historias-ventos'   => 'christopher-mauricio',
+        'compendio-futhark'  => 'christopher-mauricio',
+        'breviario-nordico'  => 'christopher-mauricio',
+        'linguagem-da-chama' => 'christopher-mauricio',
     ];
 
     $update = $pdo->prepare('UPDATE volumes SET author_id = ? WHERE collection_id = ? AND (author_id IS NULL OR author_id = \'\')');
@@ -272,6 +266,14 @@ function ba_get_setting(string $key, string $default = ''): string
     return $all[$key] ?? $default;
 }
 
+/**
+ * Dados iniciais do catálogo — atualizados a partir dos manuscritos reais
+ * (não mais placeholders): "As Histórias que os Ventos Trazem" tem 4
+ * volumes confirmados pela ficha catalográfica de cada um; "Compêndio do
+ * Futhark Antigo" é hoje uma obra única e completa (não mais dividida em
+ * partes), com ISBN já definido; "A Linguagem da Chama" é título novo,
+ * ainda em revisão (sem ISBN/data de publicação por enquanto).
+ */
 function ba_seed_catalog(PDO $pdo): void
 {
     $collections = [
@@ -279,32 +281,44 @@ function ba_seed_catalog(PDO $pdo): void
             'id' => 'historias-ventos',
             'title' => 'As Histórias que os Ventos Trazem',
             'type' => 'livro',
-            'description' => 'Mitologia nórdica recontada à luz do fogo, através da voz de Kunnigr Afi — o Avô Sábio — para quem já sabe ouvir e para quem ainda está aprendendo.',
+            'description' => 'Mitos e saberes da antiga tradição nórdica, recontados à luz do fogo, através da voz de Kunnigr Afi — o Avô Sábio — para quem já sabe ouvir e para quem ainda está aprendendo. Coleção em 4 volumes.',
             'accent_color' => '#d4af37',
             'volumes' => [
                 [
-                    'id' => 'hv-v1', 'volume_label' => 'Volume I', 'subtitle' => 'As Sementes do Início',
-                    'description' => 'Da escuridão de Ginnungagap ao nascimento das Nove Terras — as primeiras histórias que o Avô conta junto ao fogo.',
+                    'id' => 'hv-v1', 'volume_label' => 'Volume I', 'subtitle' => 'Das Origens ao Tear do Destino',
+                    'description' => 'Do fogo e do gelo ao nascimento das Nove Terras: Ymir, Auðhumbla, a árvore Yggdrasil e o surgimento dos primeiros humanos, Ask e Embla. Encerra com as Nornas e o Tear do Destino — Wyrd, Örlög, Hamingja e o que essas ideias significam de verdade.',
                     'price' => 79.90,
                     'promo_active' => 1, 'promo_type' => 'percent', 'promo_value' => 15, 'promo_label' => 'Lançamento',
                     'promo_start_date' => '2026-06-01', 'promo_end_date' => '2026-09-01',
-                    'tags' => ['cosmogonia', 'Yggdrasil', 'Óðinn'],
+                    'isbn' => '', 'publication_date' => '2026-01-01',
+                    'tags' => ['cosmogonia', 'Yggdrasil', 'Nornir', 'Wyrd', 'Örlög'],
                 ],
                 [
-                    'id' => 'hv-v2', 'volume_label' => 'Volume II', 'subtitle' => 'Deuses, Gigantes e Guerreiros',
-                    'description' => 'As sagas de Þórr, Loki e os salões de Ásgarðr — coragem, humor e as fissuras que antecipam o fim.',
+                    'id' => 'hv-v2', 'volume_label' => 'Volume II', 'subtitle' => 'Os Deuses da Ordem',
+                    'description' => 'Óðinn, o Pai de Todos; Þórr, o Defensor; Týr, o Sacrificado; Baldr, o Brilhante; e os demais Æsir — encerrando com a Guerra Æsir-Vanir e a grande troca que redesenhou o panteão nórdico.',
                     'price' => 79.90,
                     'promo_active' => 0, 'promo_type' => 'percent', 'promo_value' => 0, 'promo_label' => '',
                     'promo_start_date' => '', 'promo_end_date' => '',
-                    'tags' => ['Þórr', 'Loki', 'drengskapr'],
+                    'isbn' => '', 'publication_date' => '',
+                    'tags' => ['Óðinn', 'Þórr', 'Týr', 'Baldr', 'Æsir'],
                 ],
                 [
-                    'id' => 'hv-v3', 'volume_label' => 'Volume III', 'subtitle' => 'Ragnarök e o Que Vem Depois',
-                    'description' => 'O crepúsculo dos deuses e o que os ventos ainda trazem depois da última batalha.',
+                    'id' => 'hv-v3', 'volume_label' => 'Volume III', 'subtitle' => 'Criaturas, Heróis e Sagas',
+                    'description' => 'Freyja e Freyr, Njörðr e os ventos do mar, Loki o Cambiante, os gigantes, os anões artífices, elfos e espíritos da terra — e a saga de Sigurðr, o Matador de Dragões, entre outras histórias de coragem.',
+                    'price' => 79.90,
+                    'promo_active' => 0, 'promo_type' => 'percent', 'promo_value' => 0, 'promo_label' => '',
+                    'promo_start_date' => '', 'promo_end_date' => '',
+                    'isbn' => '', 'publication_date' => '',
+                    'tags' => ['Freyja', 'Loki', 'Sigurðr', 'gigantes', 'anões'],
+                ],
+                [
+                    'id' => 'hv-v4', 'volume_label' => 'Volume IV', 'subtitle' => 'Sabedoria, Magia e o Fogo Eterno',
+                    'description' => 'As runas como alfabeto dos sussurros, magia e práticas espirituais, os ritos do ano sagrado e as palavras do Hávamál — encerrando com Wyrd aplicado à vida hoje. Traz também glossário, guia de pronúncia, linha do tempo mítica e mapa dos Nove Mundos.',
                     'price' => 84.90,
                     'promo_active' => 0, 'promo_type' => 'percent', 'promo_value' => 0, 'promo_label' => '',
                     'promo_start_date' => '', 'promo_end_date' => '',
-                    'tags' => ['Ragnarök', 'profecia'],
+                    'isbn' => '', 'publication_date' => '',
+                    'tags' => ['runas', 'Hávamál', 'magia', 'rituais'],
                 ],
             ],
         ],
@@ -312,32 +326,17 @@ function ba_seed_catalog(PDO $pdo): void
             'id' => 'compendio-futhark',
             'title' => 'Compêndio do Futhark Antigo',
             'type' => 'monografia',
-            'description' => 'Estudo do Futhark Antigo — as 24 runas, seus significados, correspondências e contexto histórico, com rigor conceitual e linguagem acessível.',
+            'description' => 'Das origens cósmicas à práxis oracular e mágica — estudo completo do Futhark Antigo pelos três Ætts (Freyr e Freyja, Heimdallr, Týr), com rigor conceitual e aplicação prática, incluindo o sistema autoral de Galdr e vibroturgia do destino.',
             'accent_color' => '#a29c8f',
             'volumes' => [
                 [
-                    'id' => 'cf-v1', 'volume_label' => 'Volume I', 'subtitle' => 'A Ætt de Freyr',
-                    'description' => 'As primeiras oito runas do Futhark Antigo — origem, fonema e significado simbólico de cada uma.',
-                    'price' => 69.90,
-                    'promo_active' => 1, 'promo_type' => 'fixed', 'promo_value' => 10, 'promo_label' => 'Semana da Editora',
-                    'promo_start_date' => '2026-07-15', 'promo_end_date' => '2026-07-31',
-                    'tags' => ['runas', 'Fehu', 'Futhark'],
-                ],
-                [
-                    'id' => 'cf-v2', 'volume_label' => 'Volume II', 'subtitle' => 'A Ætt de Hagal',
-                    'description' => 'Da ruptura à renovação: as runas do meio do Futhark e seu papel nas fontes históricas.',
-                    'price' => 69.90,
-                    'promo_active' => 0, 'promo_type' => 'percent', 'promo_value' => 0, 'promo_label' => '',
-                    'promo_start_date' => '', 'promo_end_date' => '',
-                    'tags' => ['runas', 'Futhark'],
-                ],
-                [
-                    'id' => 'cf-apendice', 'volume_label' => 'Apêndice', 'subtitle' => 'Tabela Comparada de Pronúncia',
-                    'description' => 'Nórdico Antigo × Islandês Moderno — referência de consulta rápida para as 24 runas.',
-                    'price' => 29.90,
-                    'promo_active' => 0, 'promo_type' => 'percent', 'promo_value' => 0, 'promo_label' => '',
-                    'promo_start_date' => '', 'promo_end_date' => '',
-                    'tags' => ['referência', 'pronúncia'],
+                    'id' => 'cf-v1', 'volume_label' => 'Edição completa', 'subtitle' => 'Das Origens Cósmicas à Práxis Oracular e Mágica',
+                    'description' => 'Os três Ætts do Futhark Antigo — de Freyr e Freyja à soberania de Týr —, o Galdr como arquitetura do som primordial, a arte oracular e a ética do Wyrd, e a prática mágica com runas. Traz tabelas de referência rápida, glossário norrænt-português, glossário conceitual rúnico e índice remissivo.',
+                    'price' => 129.90,
+                    'promo_active' => 1, 'promo_type' => 'fixed', 'promo_value' => 15, 'promo_label' => 'Lançamento',
+                    'promo_start_date' => '2026-07-15', 'promo_end_date' => '2026-09-01',
+                    'isbn' => '978-65-01-94561-3', 'publication_date' => '2026-01-01',
+                    'tags' => ['Futhark', 'runas', 'Galdr', 'Wyrd', 'oráculo'],
                 ],
             ],
         ],
@@ -354,6 +353,7 @@ function ba_seed_catalog(PDO $pdo): void
                     'price' => 59.90,
                     'promo_active' => 0, 'promo_type' => 'percent', 'promo_value' => 0, 'promo_label' => '',
                     'promo_start_date' => '', 'promo_end_date' => '',
+                    'isbn' => '', 'publication_date' => '',
                     'tags' => ['ritual', 'Vé'],
                 ],
                 [
@@ -362,14 +362,37 @@ function ba_seed_catalog(PDO $pdo): void
                     'price' => 64.90,
                     'promo_active' => 1, 'promo_type' => 'percent', 'promo_value' => 10, 'promo_label' => 'Lançamento',
                     'promo_start_date' => '2026-07-01', 'promo_end_date' => '2026-08-15',
+                    'isbn' => '', 'publication_date' => '',
                     'tags' => ['runas', 'Nornir'],
+                ],
+            ],
+        ],
+        [
+            'id' => 'linguagem-da-chama',
+            'title' => 'A Linguagem da Chama',
+            'type' => 'monografia',
+            'description' => 'Fazer, consagrar e manter aceso — um manual prático de ofício do fogo: lamparinas, velas, incensos e ervas, com segurança e critério do início ao fim. Ainda em revisão.',
+            'accent_color' => '#9a3412',
+            'volumes' => [
+                [
+                    'id' => 'ldc-v1', 'volume_label' => 'Volume único', 'subtitle' => 'Fazer, Consagrar e Manter Aceso',
+                    'description' => 'Da chama votiva às lamparinas, velas e incensos: princípios, construção segura, combustíveis e manutenção, diagnóstico pela chama, ervas e resinas com limites claros — encerrando com encerramento e descarte consciente. Inclui apêndice de herbologia do artífice.',
+                    'price' => 69.90,
+                    'promo_active' => 0, 'promo_type' => 'percent', 'promo_value' => 0, 'promo_label' => '',
+                    'promo_start_date' => '', 'promo_end_date' => '',
+                    'isbn' => '', 'publication_date' => '',
+                    'tags' => ['fogo ritual', 'velas', 'incenso', 'lamparinas'],
                 ],
             ],
         ],
     ];
 
     $insCol = $pdo->prepare('INSERT INTO collections (id, title, type, description, accent_color, sort_order) VALUES (?,?,?,?,?,?)');
-    $insVol = $pdo->prepare('INSERT INTO volumes (id, collection_id, volume_label, subtitle, description, price, promo_active, promo_type, promo_value, promo_label, promo_start_date, promo_end_date, sort_order) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)');
+    $insVol = $pdo->prepare(
+        'INSERT INTO volumes
+         (id, collection_id, volume_label, subtitle, description, price, promo_active, promo_type, promo_value, promo_label, promo_start_date, promo_end_date, sort_order, isbn, publication_date)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
+    );
     $insTag = $pdo->prepare('INSERT INTO volume_tags (volume_id, tag) VALUES (?, ?)');
 
     foreach ($collections as $ci => $col) {
@@ -379,6 +402,7 @@ function ba_seed_catalog(PDO $pdo): void
                 $vol['id'], $col['id'], $vol['volume_label'], $vol['subtitle'], $vol['description'],
                 $vol['price'], $vol['promo_active'], $vol['promo_type'], $vol['promo_value'],
                 $vol['promo_label'], $vol['promo_start_date'], $vol['promo_end_date'], $vi,
+                $vol['isbn'], $vol['publication_date'],
             ]);
             foreach ($vol['tags'] as $tag) {
                 $insTag->execute([$vol['id'], $tag]);
