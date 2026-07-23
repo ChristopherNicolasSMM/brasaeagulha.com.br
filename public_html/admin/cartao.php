@@ -69,6 +69,7 @@ $settings = ba_get_settings();
     <a href="/admin/">Catálogo</a>
     <a href="/admin/autores.php">Autores</a>
     <a href="/admin/tags.php">Tags</a>
+    <a href="/admin/interesse.php">Interesse</a>
     <a href="/admin/cartao.php" class="active">Cartão de visita</a>
     <a href="/admin/paginas.php">Páginas</a>
   </div>

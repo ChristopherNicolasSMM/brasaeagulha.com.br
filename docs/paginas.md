@@ -21,6 +21,7 @@ copiável desses endereços.
 | `/admin/` | Catálogo — lista de coleções/volumes, modal de criar/editar, adicionar coleção |
 | `/admin/autores.php` | Lista de autores, modal de criar/editar/excluir |
 | `/admin/tags.php` | Lista de tags, modal de criar/editar/inativar |
+| `/admin/interesse.php` | Backlog de "avise-me quando chegar" — filtros por livro/status, marcação em lote de campanha enviada, exportar CSV |
 | `/admin/cartao.php` | Configurações do cartão de visita/vCard + gerador de QR Code |
 | `/admin/paginas.php` | Central de links (esta lista, mas pra uso no dia a dia) |
 | `/admin/change-password.php` | Trocar a própria senha |
@@ -66,6 +67,8 @@ site/cartão, só em JSON.
 | `/api/admin/save-tag.php` | Cria ou edita uma tag, incluindo inativar |
 | `/api/admin/tags-list.php` | Lista completa de tags (ativas e inativas), com contagem de uso |
 | `/api/admin/notify-counts.php` | Quantas pessoas pediram aviso, por volume |
+| `/api/admin/stock-interest-list.php` | Lista completa de interesse (e-mail, WhatsApp, aniversário, status de campanha), com nome do livro já montado |
+| `/api/admin/mark-campaign-sent.php` | Marca (ou desmarca) um ou mais registros como campanha enviada — recebe `ids` (array) e `sent` (bool) |
 | `/api/admin/save-author.php` | Cria ou edita um autor |
 | `/api/admin/delete-author.php` | Exclui um autor (os livros dele ficam sem autor, não são apagados) |
 | `/api/admin/update-settings.php` | Atualiza uma ou mais chaves de `site_settings` (lista branca fixa de chaves aceitas) |
