@@ -51,6 +51,7 @@ $username = $_SESSION['admin_username'] ?? 'admin';
   <div class="admin-tabs">
     <a href="/admin/">Catálogo</a>
     <a href="/admin/autores.php" class="active">Autores</a>
+    <a href="/admin/tags.php">Tags</a>
     <a href="/admin/cartao.php">Cartão de visita</a>
     <a href="/admin/paginas.php">Páginas</a>
   </div>

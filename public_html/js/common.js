@@ -3,9 +3,9 @@
    Usado tanto pelo site público (site.js) quanto pelo painel (admin.js).
    ========================================================================== */
 
-const TYPE_LABELS  = { livro: 'Livro', monografia: 'Monografia', liturgico: 'Litúrgico' };
-const TYPE_ACCENTS = { livro: '#d4af37', monografia: '#a29c8f', liturgico: '#4d7ea8' };
-const TYPE_SIGILS  = { livro: 'ᛟ', monografia: 'ᚠ', liturgico: 'ᚨ' };
+const TYPE_LABELS  = { livro: 'Livro', monografia: 'Monografia', liturgico: 'Litúrgico', apostila: 'Apostila' };
+const TYPE_ACCENTS = { livro: '#d4af37', monografia: '#a29c8f', liturgico: '#4d7ea8', apostila: '#4be78c' };
+const TYPE_SIGILS  = { livro: 'ᛟ', monografia: 'ᚠ', liturgico: 'ᚨ', apostila: 'ᛃ' };
 
 function esc(str){
   return String(str ?? '').replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));

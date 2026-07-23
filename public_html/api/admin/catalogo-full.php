@@ -1,11 +1,13 @@
 <?php
 declare(strict_types=1);
-require __DIR__ . '/../../config.php';
+require __DIR__ . '/../../../config.php';
+ba_start_session();
 header('Content-Type: application/json; charset=utf-8');
+ba_require_admin_api();
 
 $pdo = ba_db();
 
-$collections = $pdo->query('SELECT * FROM collections WHERE active = 1 ORDER BY sort_order, title')->fetchAll();
+$collections = $pdo->query('SELECT * FROM collections ORDER BY sort_order, title')->fetchAll();
 $volumesStmt = $pdo->prepare('SELECT * FROM volumes WHERE collection_id = ? ORDER BY sort_order, volume_label');
 $tagsStmt = $pdo->prepare('SELECT tag FROM volume_tags WHERE volume_id = ?');
 $authorStmt = $pdo->prepare('SELECT id, name FROM authors WHERE id = ?');
@@ -56,6 +58,7 @@ foreach ($collections as $col) {
         'type' => $col['type'],
         'description' => $col['description'],
         'accentColor' => $col['accent_color'],
+        'active' => (bool) $col['active'],
         'volumes' => $volumes,
     ];
 }

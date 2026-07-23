@@ -20,7 +20,7 @@ if (!is_array($collections)) {
     exit;
 }
 
-$allowedTypes = ['livro', 'monografia', 'liturgico'];
+$allowedTypes = ['livro', 'monografia', 'liturgico', 'apostila'];
 $pdo = ba_db();
 $pdo->beginTransaction();
 

@@ -7,6 +7,8 @@
 
 let COLLECTIONS = [];
 let AUTHORS = [];
+let NOTIFY_COUNTS = {};
+let selectedTags = [];
 const state = { searchTerm: '' };
 
 async function postJSON(url, data){
@@ -25,12 +27,14 @@ async function postJSON(url, data){
 }
 
 async function loadCatalog(){
-  const [catalogRes, authorsRes] = await Promise.all([
-    fetch('/api/catalogo.php', { credentials: 'same-origin' }),
-    fetch('/api/authors.php', { credentials: 'same-origin' })
+  const [catalogRes, authorsRes, notifyRes] = await Promise.all([
+    fetch('/api/admin/catalogo-full.php', { credentials: 'same-origin' }),
+    fetch('/api/authors.php', { credentials: 'same-origin' }),
+    fetch('/api/admin/notify-counts.php', { credentials: 'same-origin' })
   ]);
   COLLECTIONS = await catalogRes.json();
   AUTHORS = await authorsRes.json();
+  NOTIFY_COUNTS = notifyRes.ok ? await notifyRes.json() : {};
   populateModalSelects();
   renderCollectionsList();
 }
@@ -45,6 +49,12 @@ function matchesSearch(vol, col, term){
   return haystack.includes(normalize(term));
 }
 
+function availabilityBadge(vol){
+  if(vol.availability === 'coming_soon') return '<span class="availability-badge coming-soon">Em breve</span>';
+  if(vol.availability === 'out_of_stock') return '<span class="availability-badge out-of-stock">Sem estoque</span>';
+  return '';
+}
+
 function volumeRowTemplate(vol, col){
   const p = getPricing(vol);
   return `
@@ -54,6 +64,7 @@ function volumeRowTemplate(vol, col){
         <small>${esc(vol.volumeLabel)}${vol.author ? ' · ' + esc(vol.author.name) : ''}${vol.isbn ? ' · ISBN ' + esc(vol.isbn) : ''}</small>
       </span>
       <span class="volume-row-price">
+        ${availabilityBadge(vol)}
         ${formatBRL(p.final)}
         ${p.hasPromo ? `<span class="promo-badge">${esc(p.label || 'Promoção')}</span>` : ''}
       </span>
@@ -70,10 +81,11 @@ function renderCollectionsList(){
       ? volumes.map(v => volumeRowTemplate(v, col)).join('')
       : '<p class="empty-list-hint">Nenhum volume cadastrado nesta coleção ainda.</p>';
     return `
-      <div>
+      <div style="${col.active ? '' : 'opacity:.55;'}">
         <div class="admin-collection-group-header" style="--accent:${esc(col.accentColor)}">
-          <h3>${esc(col.title)}</h3>
+          <h3>${esc(col.title)}${col.active ? '' : ' <small style="color:var(--brasa);font-family:var(--font-ui);">(inativa)</small>'}</h3>
           <span class="type-pill">${esc(TYPE_LABELS[col.type] || col.type)}</span>
+          <button type="button" class="btn btn-ghost" data-edit-collection="${esc(col.id)}">Editar coleção</button>
           <button type="button" class="btn btn-ghost" data-new-volume="${esc(col.id)}">+ Novo volume</button>
         </div>
         <div class="volume-list">${rows}</div>
@@ -83,13 +95,93 @@ function renderCollectionsList(){
   document.getElementById('adminCollections').innerHTML = html || '<p class="empty-list-hint">Nenhum resultado para essa busca.</p>';
 }
 
+/* ---------- Campo de tags (chips + sugestão) ---------- */
+const tagInputEl = document.getElementById('tagInput');
+const tagInputField = document.getElementById('tagInputField');
+const tagsHidden = document.getElementById('tagsHidden');
+
+function getAllExistingTags(){
+  const set = new Set();
+  getAllVolumes(COLLECTIONS).forEach(({ vol }) => (vol.tags || []).forEach(t => set.add(t)));
+  return Array.from(set).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+}
+
+function syncTagsHidden(){
+  tagsHidden.value = selectedTags.join(', ');
+}
+
+function renderTagChips(){
+  tagInputEl.querySelectorAll('.tag-input-chip').forEach(el => el.remove());
+  selectedTags.forEach(tag => {
+    const chip = document.createElement('span');
+    chip.className = 'tag-input-chip';
+    chip.innerHTML = `${esc(tag)} <button type="button" aria-label="Remover ${esc(tag)}">×</button>`;
+    chip.querySelector('button').addEventListener('click', () => {
+      selectedTags = selectedTags.filter(t => t !== tag);
+      renderTagChips();
+      syncTagsHidden();
+    });
+    tagInputEl.insertBefore(chip, tagInputField);
+  });
+  syncTagsHidden();
+}
+
+function addTag(rawTag){
+  const tag = rawTag.trim();
+  if(tag === '' || selectedTags.some(t => t.toLowerCase() === tag.toLowerCase())) return;
+  selectedTags.push(tag);
+  renderTagChips();
+}
+
+function closeTagSuggestions(){
+  const box = tagInputEl.querySelector('.tag-input-suggestions');
+  if(box) box.remove();
+}
+
+function showTagSuggestions(query){
+  closeTagSuggestions();
+  const all = getAllExistingTags().filter(t =>
+    !selectedTags.some(sel => sel.toLowerCase() === t.toLowerCase()) &&
+    (!query || t.toLowerCase().includes(query.toLowerCase()))
+  );
+  if(all.length === 0) return;
+  const box = document.createElement('div');
+  box.className = 'tag-input-suggestions';
+  box.innerHTML = all.slice(0, 8).map(t => `<button type="button" class="tag-input-suggestion">${esc(t)}</button>`).join('');
+  box.querySelectorAll('.tag-input-suggestion').forEach(btn => {
+    btn.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      addTag(btn.textContent);
+      tagInputField.value = '';
+      closeTagSuggestions();
+      tagInputField.focus();
+    });
+  });
+  tagInputEl.appendChild(box);
+}
+
+tagInputField.addEventListener('input', () => showTagSuggestions(tagInputField.value));
+tagInputField.addEventListener('focus', () => showTagSuggestions(tagInputField.value));
+tagInputField.addEventListener('blur', () => setTimeout(closeTagSuggestions, 150));
+tagInputField.addEventListener('keydown', (e) => {
+  if(e.key === 'Enter' || e.key === ','){
+    e.preventDefault();
+    addTag(tagInputField.value.replace(/,$/, ''));
+    tagInputField.value = '';
+    showTagSuggestions('');
+  } else if(e.key === 'Backspace' && tagInputField.value === '' && selectedTags.length){
+    selectedTags.pop();
+    renderTagChips();
+  }
+});
+
 /* ---------- Modal de volume (criação e edição) ---------- */
 const volumeModal = document.getElementById('volumeModal');
 const volumeForm = document.getElementById('volumeForm');
 
 function populateModalSelects(){
   const colSelect = volumeForm.elements['collectionId'];
-  colSelect.innerHTML = COLLECTIONS.map(c => `<option value="${esc(c.id)}">${esc(c.title)}</option>`).join('');
+  colSelect.innerHTML = COLLECTIONS.map(c => `<option value="${esc(c.id)}">${esc(c.title)}${c.active ? '' : ' (inativa)'}</option>`).join('');
 
   const authorSelect = volumeForm.elements['authorId'];
   authorSelect.innerHTML = '<option value="">— Sem autor definido —</option>' +
@@ -100,6 +192,7 @@ function openVolumeModal(volumeId, defaultCollectionId){
   const found = volumeId ? findVolumeIn(COLLECTIONS, volumeId) : null;
   volumeForm.reset();
   document.getElementById('volumeModalStatus').textContent = '';
+  closeTagSuggestions();
 
   if(found){
     const { vol, col } = found;
@@ -113,7 +206,8 @@ function openVolumeModal(volumeId, defaultCollectionId){
     volumeForm.elements['volumeLabel'].value = vol.volumeLabel || '';
     volumeForm.elements['subtitle'].value = vol.subtitle || '';
     volumeForm.elements['description'].value = vol.description || '';
-    volumeForm.elements['tags'].value = (vol.tags || []).join(', ');
+    selectedTags = [...(vol.tags || [])];
+    renderTagChips();
     volumeForm.elements['price'].value = vol.price;
     volumeForm.elements['promoActive'].checked = !!promo.active;
     volumeForm.elements['promoType'].value = promo.type || 'percent';
@@ -125,12 +219,20 @@ function openVolumeModal(volumeId, defaultCollectionId){
     volumeForm.elements['language'].value = vol.language || 'Português (Brasil)';
     volumeForm.elements['pageCount'].value = vol.pageCount ?? '';
     volumeForm.elements['publicationDate'].value = vol.publicationDate || '';
+    volumeForm.elements['availability'].value = vol.availability || 'available';
+    const n = NOTIFY_COUNTS[vol.id] || 0;
+    document.getElementById('notifyCountInfo').textContent = n > 0
+      ? `${n} pessoa${n === 1 ? '' : 's'} aguardando aviso de estoque`
+      : '';
   } else {
     document.getElementById('volumeModalTitle').textContent = 'Novo volume';
     document.getElementById('deleteVolumeBtn').hidden = true;
     volumeForm.elements['id'].value = '';
     if(defaultCollectionId) volumeForm.elements['collectionId'].value = defaultCollectionId;
     volumeForm.elements['language'].value = 'Português (Brasil)';
+    selectedTags = [];
+    renderTagChips();
+    document.getElementById('notifyCountInfo').textContent = '';
   }
 
   volumeModal.showModal();
@@ -155,6 +257,7 @@ volumeForm.addEventListener('submit', async (e) => {
       language: fd.get('language'),
       pageCount: fd.get('pageCount'),
       publicationDate: fd.get('publicationDate'),
+      availability: fd.get('availability'),
       promotion: {
         active: fd.get('promoActive') === 'on',
         type: fd.get('promoType'),
@@ -185,17 +288,69 @@ document.getElementById('deleteVolumeBtn').addEventListener('click', async (e) =
 
 document.querySelector('[data-action="close-volume-modal"]').addEventListener('click', () => volumeModal.close());
 
+/* ---------- Modal de coleção (edição) ---------- */
+const collectionModal = document.getElementById('collectionModal');
+const collectionEditForm = document.getElementById('collectionEditForm');
+
+function openCollectionModal(collectionId){
+  const col = COLLECTIONS.find(c => c.id === collectionId);
+  if(!col) return;
+  collectionEditForm.reset();
+  document.getElementById('collectionModalStatus').textContent = '';
+  collectionEditForm.elements['id'].value = col.id;
+  collectionEditForm.elements['title'].value = col.title;
+  collectionEditForm.elements['type'].value = col.type;
+  collectionEditForm.elements['accentColor'].value = col.accentColor;
+  collectionEditForm.elements['description'].value = col.description || '';
+  collectionEditForm.elements['active'].checked = col.active !== false;
+  collectionModal.showModal();
+}
+
+collectionEditForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const status = document.getElementById('collectionModalStatus');
+  const fd = new FormData(collectionEditForm);
+  status.textContent = 'Salvando...';
+  try {
+    await postJSON('/api/admin/update-collection.php', {
+      id: fd.get('id'),
+      title: fd.get('title'),
+      type: fd.get('type'),
+      accentColor: fd.get('accentColor'),
+      description: fd.get('description'),
+      active: fd.get('active') === 'on'
+    });
+    collectionModal.close();
+    await loadCatalog();
+  } catch (err){
+    status.textContent = 'Erro: ' + err.message;
+  }
+});
+
+document.querySelector('[data-action="close-collection-modal"]').addEventListener('click', () => collectionModal.close());
+
 /* ---------- Eventos: abrir modal, buscar, coleção, exportar/importar ---------- */
 document.getElementById('adminCollections').addEventListener('click', (e) => {
   const openBtn = e.target.closest('[data-open-volume]');
   if(openBtn){ openVolumeModal(openBtn.dataset.openVolume, null); return; }
   const newBtn = e.target.closest('[data-new-volume]');
-  if(newBtn){ openVolumeModal(null, newBtn.dataset.newVolume); }
+  if(newBtn){ openVolumeModal(null, newBtn.dataset.newVolume); return; }
+  const editColBtn = e.target.closest('[data-edit-collection]');
+  if(editColBtn){ openCollectionModal(editColBtn.dataset.editCollection); }
 });
 
 document.getElementById('volumeSearch').addEventListener('input', (e) => {
   state.searchTerm = e.target.value.trim();
   renderCollectionsList();
+});
+
+const TYPE_DEFAULT_COLORS = { livro: '#d4af37', monografia: '#a29c8f', liturgico: '#4d7ea8', apostila: '#4be78c' };
+let collectionColorTouched = false;
+document.getElementById('newCollectionColor').addEventListener('input', () => { collectionColorTouched = true; });
+document.getElementById('newCollectionType').addEventListener('change', (e) => {
+  if(!collectionColorTouched){
+    document.getElementById('newCollectionColor').value = TYPE_DEFAULT_COLORS[e.target.value] || '#d4af37';
+  }
 });
 
 document.getElementById('newCollectionForm').addEventListener('submit', async e => {
@@ -205,9 +360,11 @@ document.getElementById('newCollectionForm').addEventListener('submit', async e 
     await postJSON('/api/admin/add-collection.php', {
       title: fd.get('title'),
       type: fd.get('type'),
-      description: fd.get('description')
+      description: fd.get('description'),
+      accentColor: fd.get('accentColor')
     });
     e.target.reset();
+    collectionColorTouched = false;
     await loadCatalog();
   } catch (err){
     alert('Não foi possível adicionar a coleção: ' + err.message);
@@ -215,7 +372,7 @@ document.getElementById('newCollectionForm').addEventListener('submit', async e 
 });
 
 document.getElementById('exportBtn').addEventListener('click', async () => {
-  const res = await fetch('/api/catalogo.php', { credentials: 'same-origin' });
+  const res = await fetch('/api/admin/catalogo-full.php', { credentials: 'same-origin' });
   const data = await res.json();
   const blob = new Blob([JSON.stringify({ collections: data }, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);

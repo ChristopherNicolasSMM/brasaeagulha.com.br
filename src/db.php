@@ -112,6 +112,37 @@ function ba_ensure_schema(PDO $pdo): void
         sort_order INTEGER DEFAULT 0
     )');
 
+    // Fase 4 — registro de tags (permite CRUD/inativação central, em vez de
+    // string solta). volume_tags.tag continua guardando o texto (mantém
+    // compatibilidade com todo o código que já lê vol.tags como strings);
+    // tag_id é a referência "de verdade" pra edição/inativação em um só lugar.
+    $pdo->exec('CREATE TABLE IF NOT EXISTS tags (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        active INTEGER DEFAULT 1,
+        sort_order INTEGER DEFAULT 0
+    )');
+    ba_ensure_column($pdo, 'volume_tags', 'tag_id', "TEXT REFERENCES tags(id) ON DELETE SET NULL");
+
+    // Fase 4 — coleções e volumes podem ser inativados sem apagar
+    // (inativação em vez de exclusão — preserva histórico/dados ligados).
+    ba_ensure_column($pdo, 'collections', 'active', "INTEGER DEFAULT 1");
+
+    // Fase 4 — disponibilidade do volume e interesse em "avise-me"
+    ba_ensure_column($pdo, 'volumes', 'availability', "TEXT DEFAULT 'available'");
+    $pdo->exec('CREATE TABLE IF NOT EXISTS stock_interest (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        volume_id TEXT NOT NULL REFERENCES volumes(id) ON DELETE CASCADE,
+        email TEXT NOT NULL,
+        whatsapp TEXT DEFAULT \'\',
+        birthday TEXT DEFAULT \'\',
+        campaign_sent INTEGER DEFAULT 0,
+        campaign_sent_at TEXT DEFAULT \'\',
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(volume_id, email)
+    )');
+    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_stock_interest_volume ON stock_interest(volume_id)');
+
     // Colunas novas em volumes (SQLite não tem "ADD COLUMN IF NOT EXISTS"
     // nativo, por isso o helper confere antes de tentar adicionar).
     ba_ensure_column($pdo, 'volumes', 'isbn', "TEXT DEFAULT ''");
@@ -150,6 +181,7 @@ function ba_ensure_seed(PDO $pdo): void
 {
     $collectionCount = (int) $pdo->query('SELECT COUNT(*) FROM collections')->fetchColumn();
     if ($collectionCount === 0) {
+        require_once __DIR__ . '/seed-data.php';
         ba_seed_catalog($pdo);
     }
 
@@ -188,6 +220,7 @@ function ba_ensure_seed(PDO $pdo): void
     }
 
     ba_ensure_authors($pdo);
+    ba_ensure_tags_migration($pdo);
 }
 
 /**
@@ -238,6 +271,58 @@ function ba_ensure_authors(PDO $pdo): void
 }
 
 /** Gera um slug simples (minúsculas, sem acento, hífens) a partir de um texto. */
+/**
+ * Migração única: registra na tabela `tags` toda tag que já existia em
+ * `volume_tags` como texto solto, e liga `volume_tags.tag_id` a ela.
+ */
+function ba_ensure_tags_migration(PDO $pdo): void
+{
+    if (ba_migration_done($pdo, 'tags_registry_v1')) {
+        return;
+    }
+
+    $distinct = $pdo->query('SELECT DISTINCT tag FROM volume_tags WHERE tag_id IS NULL')->fetchAll();
+    foreach ($distinct as $row) {
+        $tagId = ba_find_or_create_tag($pdo, $row['tag']);
+        $upd = $pdo->prepare('UPDATE volume_tags SET tag_id = ? WHERE tag = ? AND tag_id IS NULL');
+        $upd->execute([$tagId, $row['tag']]);
+    }
+
+    ba_mark_migration_done($pdo, 'tags_registry_v1');
+}
+
+/** Acha o id de uma tag pelo nome (sem diferenciar maiúsculas), criando se não existir. */
+function ba_find_or_create_tag(PDO $pdo, string $name): string
+{
+    $name = trim($name);
+    $find = $pdo->prepare('SELECT id FROM tags WHERE LOWER(name) = LOWER(?)');
+    $find->execute([$name]);
+    $existing = $find->fetch();
+    if ($existing) {
+        return $existing['id'];
+    }
+
+    $id = ba_slugify($name);
+    $orig = $id;
+    $n = 2;
+    $check = $pdo->prepare('SELECT 1 FROM tags WHERE id = ?');
+    while (true) {
+        $check->execute([$id]);
+        if (!$check->fetch()) {
+            break;
+        }
+        $id = $orig . '-' . $n;
+        $n++;
+    }
+
+    $countStmt = $pdo->query('SELECT COUNT(*) FROM tags');
+    $sortOrder = (int) $countStmt->fetchColumn();
+    $ins = $pdo->prepare('INSERT INTO tags (id, name, active, sort_order) VALUES (?, ?, 1, ?)');
+    $ins->execute([$id, $name, $sortOrder]);
+
+    return $id;
+}
+
 function ba_slugify(string $str): string
 {
     $transliterated = @iconv('UTF-8', 'ASCII//TRANSLIT', $str);
@@ -264,292 +349,4 @@ function ba_get_setting(string $key, string $default = ''): string
 {
     $all = ba_get_settings();
     return $all[$key] ?? $default;
-}
-
-/**
- * Dados iniciais do catálogo — atualizados a partir dos manuscritos reais
- * (não mais placeholders): "As Histórias que os Ventos Trazem" tem 4
- * volumes confirmados pela ficha catalográfica de cada um; "Compêndio do
- * Futhark Antigo" é hoje uma obra única e completa (não mais dividida em
- * partes), com ISBN já definido; "A Linguagem da Chama" é título novo,
- * ainda em revisão (sem ISBN/data de publicação por enquanto).
- */
-function ba_seed_catalog(PDO $pdo): void
-{
-    $collections = [
-        [
-            'id' => 'compendio-futhark',
-            'title' => 'Compêndio do Futhark Antigo',
-            'type' => 'livro',
-            'description' => 'Das origens cósmicas à práxis oracular e mágica — estudo completo do Futhark Antigo pelos três Ætts (Freyr e Freyja, Heimdallr, Týr), com rigor conceitual e aplicação prática, incluindo o sistema autoral de Galdr e vibroturgia do destino.',
-            'accent_color' => '#ffe23f',
-            'volumes' => [
-                [
-                    'id' => 'cf-v1', 
-                    'volume_label' => 'Edição completa', 
-                    'subtitle' => 'Das Origens Cósmicas à Práxis Oracular e Mágica',
-                    'description' => 'Os três Ætts do Futhark Antigo — de Freyr e Freyja à soberania de Týr —, o Galdr como arquitetura do som primordial, a arte oracular e a ética do Wyrd, e a prática mágica com runas. Traz tabelas de referência rápida, glossário norrænt-português, glossário conceitual rúnico e índice remissivo.',
-                    'price' => 142.90,
-                    'promo_active' => 1, 
-                    'promo_type' => 'fixed', 
-                    'promo_value' => 10, 
-                    'promo_label' => 'Lançamento',
-                    'promo_start_date' => '2026-07-15', 
-                    'promo_end_date' => '2026-09-01',
-                    'isbn' => '978-65-01-94561-3', 
-                    'publication_date' => '2026-01-01',
-                    'tags' => ['Futhark', 'runas', 'Galdr', 'Wyrd', 'oráculo'],
-                ],
-            ],
-        ],        
-        [
-            'id' => 'historias-ventos',
-            'title' => 'As Histórias que os Ventos Trazem',
-            'type' => 'livro',
-            'description' => 'Mitos e saberes da antiga tradição nórdica, recontados à luz do fogo, através da voz de Kunnigr Afi — o Avô Sábio — para quem já sabe ouvir e para quem ainda está aprendendo. Coleção em 4 volumes.',
-            'accent_color' => '#8f7624',
-            'volumes' => [
-                [
-                    'id' => 'hv-v1', 
-                    'volume_label' => 'Volume I', 
-                    'subtitle' => 'Das Origens ao Tear do Destino',
-                    'description' => 'Do fogo e do gelo ao nascimento das Nove Terras: Ymir, Auðhumbla, a árvore Yggdrasil e o surgimento dos primeiros humanos, Ask e Embla. Encerra com as Nornas e o Tear do Destino — Wyrd, Örlög, Hamingja e o que essas ideias significam de verdade.',
-                    'price' => 39.87,
-                    'promo_active' => 1, 
-                    'promo_type' => 'fixed', 
-                    'promo_value' => 5,90, 
-                    'promo_label' => 'Lançamento',
-                    'promo_start_date' => '2026-06-01', 
-                    'promo_end_date' => '2026-09-01',
-                    'isbn' => '', 
-                    'publication_date' => '2026-01-01',
-                    'tags' => ['cosmogonia', 'Yggdrasil', 'Nornir', 'Wyrd', 'Örlög'],
-                ],
-                [
-                    'id' => 'hv-v2', 
-                    'volume_label' => 'Volume II', 
-                    'subtitle' => 'Os Deuses da Ordem',
-                    'description' => 'Óðinn, o Pai de Todos; Þórr, o Defensor; Týr, o Sacrificado; Baldr, o Brilhante; e os demais Æsir — encerrando com a Guerra Æsir-Vanir e a grande troca que redesenhou o panteão nórdico.',
-                    'price' => 99.90,
-                    'promo_active' => 0, 
-                    'promo_type' => 'percent', 
-                    'promo_value' => 0, 
-                    'promo_label' => '',
-                    'promo_start_date' => '', 
-                    'promo_end_date' => '',
-                    'isbn' => '', 
-                    'publication_date' => '',
-                    'tags' => ['Óðinn', 'Þórr', 'Týr', 'Baldr', 'Æsir'],
-                ],
-                [
-                    'id' => 'hv-v3', 
-                    'volume_label' => 'Volume III', 
-                    'subtitle' => 'Criaturas, Heróis e Sagas',
-                    'description' => 'Freyja e Freyr, Njörðr e os ventos do mar, Loki o Cambiante, os gigantes, os anões artífices, elfos e espíritos da terra — e a saga de Sigurðr, o Matador de Dragões, entre outras histórias de coragem.',
-                    'price' => 99.90,
-                    'promo_active' => 0, 
-                    'promo_type' => 'percent', 
-                    'promo_value' => 0, 
-                    'promo_label' => '',
-                    'promo_start_date' => '', 
-                    'promo_end_date' => '',
-                    'isbn' => '', 
-                    'publication_date' => '',
-                    'tags' => ['Freyja', 'Loki', 'Sigurðr', 'gigantes', 'anões'],
-                ],
-                [
-                    'id' => 'hv-v4', 
-                    'volume_label' => 'Volume IV', 
-                    'subtitle' => 'Sabedoria, Magia e o Fogo Eterno',
-                    'description' => 'As runas como alfabeto dos sussurros, magia e práticas espirituais, os ritos do ano sagrado e as palavras do Hávamál — encerrando com Wyrd aplicado à vida hoje. Traz também glossário, guia de pronúncia, linha do tempo mítica e mapa dos Nove Mundos.',
-                    'price' => 99.90,
-                    'promo_active' => 0, 
-                    'promo_type' => 'percent', 
-                    'promo_value' => 0, 
-                    'promo_label' => '',
-                    'promo_start_date' => '', 
-                    'promo_end_date' => '',
-                    'isbn' => '', 
-                    'publication_date' => '',
-                    'tags' => ['runas', 'Hávamál', 'magia', 'rituais'],
-                ],
-            ],
-        ],
-        [
-            'id' => 'breviario-nordico',
-            'title' => 'Breviário Nórdico',
-            'type' => 'liturgico',
-            'description' => 'Liturgias de abertura, encerramento e orientação para a consulta das runas — um breviário para uso pessoal, contemplativo e reverente.',
-            'accent_color' => '#4d91ce',
-            'volumes' => [
-                [
-                    'id' => 'bn-v1',
-                    'volume_label' => 'Volume único', 
-                    'subtitle' => 'Ritos de Abertura e Encerramento',
-                    'description' => 'A Porta do Vé, a preparação do espaço e as fórmulas de fechamento — a estrutura completa de um rito pessoal.',
-                    'price' => 19.90,
-                    'promo_active' => 0, 
-                    'promo_type' => 'percent', 
-                    'promo_value' => 0, 
-                    'promo_label' => '',
-                    'promo_start_date' => '', 
-                    'promo_end_date' => '',
-                    'isbn' => '', 
-                    'publication_date' => '',
-                    'tags' => ['ritual', 'Vé', 'runas', 'magia', 'oração']
-                ]
-            ],
-        ],
-        [
-            'id' => 'linguagem-da-chama',
-            'title' => 'A Linguagem da Chama',
-            'type' => 'livro',
-            'description' => 'Fazer, consagrar e manter aceso — um manual prático de ofício do fogo: lamparinas, velas, incensos e ervas, com segurança e critério do início ao fim. Ainda em revisão.',
-            'accent_color' => '#9a3412',
-            'volumes' => [
-                [
-                    'id' => 'ldc-v1', 
-                    'volume_label' => 'Volume único', 
-                    'subtitle' => 'Fazer, Consagrar e Manter Aceso',
-                    'description' => 'Da chama votiva às lamparinas, velas e incensos: princípios, construção segura, combustíveis e manutenção, diagnóstico pela chama, ervas e resinas com limites claros — encerrando com encerramento e descarte consciente. Inclui apêndice de herbologia do artífice.',
-                    'price' => 69.90,
-                    'promo_active' => 0, 
-                    'promo_type' => 'percent',
-                    'promo_value' => 0,
-                    'promo_label' => '',
-                    'promo_start_date' => '',
-                    'promo_end_date' => '',
-                    'isbn' => '', 
-                    'publication_date' => '',
-                    'tags' => ['fogo ritual', 'velas', 'incenso', 'lamparinas'],
-                ],
-            ],
-        ],
-
-
-        [
-            'id' => 'sessao-monografias',
-            'title' => 'Palestras em Monografias',
-            'type' => 'monografia',
-            'description' => 'Uma série de monografias impressas e em PDF, cada uma com uma palestra completa sobre um tema específico, incluindo xamanismo, cultura ( afro, indigena, brasileira ) como umbanda, kimbanda, candomble, mitologia, magia e ética do Wyrd.',
-            'accent_color' => '#4e4636',
-            'volumes' => [
-                [
-                    'id' => 'sm-v1', 
-                    'volume_label' => 'Ancestralidade',
-                    'subtitle' => 'Monografia 1',
-                    'description' => 'Conectando-se com a Força das Raízes',
-                    'price' => 19.90,
-                    'promo_active' => 1, 
-                    'promo_type' => 'fixed', 
-                    'promo_value' => 17.90, 
-                    'promo_label' => 'Lançamento',
-                    'promo_start_date' => '2026-07-15', 
-                    'promo_end_date' => '2026-09-01',
-                    'isbn' => '978-65-01-94561-3', 
-                    'publication_date' => '2026-01-01',
-                    'tags' => ['ancestralidade', 'umbanda', 'kimbanda', 'candomblé', 'magia'],
-                ],
-                               [
-                    'id' => 'sm-v2', 
-                    'volume_label' => 'Cimatica',
-                    'subtitle' => 'Monografia 2',
-                    'description' => 'Explorando a Vibração e a Forma',
-                    'price' => 19.90,
-                    'promo_active' => 1, 
-                    'promo_type' => 'fixed', 
-                    'promo_value' => 17.90, 
-                    'promo_label' => 'Lançamento',
-                    'promo_start_date' => '2026-07-15', 
-                    'promo_end_date' => '2026-09-01',
-                    'isbn' => '978-65-01-94561-3', 
-                    'publication_date' => '2026-01-01',
-                    'tags' => ['cimatica', 'vibração', 'forma', 'som', 'energia'],
-                ],
-            ],
-        ], 
-
-
-        /**
-         * Coleções antigas que serão lançadas novamente em 2026, com ISBNs e datas de publicação já definidas. 
-         * A ideia é que o catálogo seja atualizado com essas informações.
-         */
-        [
-            'id' => 'xamans-floresta-concreto',
-            'title' => 'Os Xamãs da Floresta de Concreto',
-            'type' => 'livro',
-            'description' => 'Uma análise da espiritualidade urbana e da prática xamânica em contextos contemporâneos, explorando a relação entre o sagrado e o cotidiano.',
-            'accent_color' => '#4c00ff6e',
-            'volumes' => [
-                [
-                    'id' => 'xfc-v1', 
-                    'volume_label' => 'Edição completa', 
-                    'subtitle' => 'Explorando a Espiritualidade Urbana',
-                    'description' => 'Uma análise da espiritualidade urbana e da prática xamânica em contextos contemporâneos, explorando a relação entre o sagrado e o cotidiano.',
-                    'price' => 32.91,
-                    'promo_active' => 1, 
-                    'promo_type' => 'fixed', 
-                    'promo_value' => 5.8, 
-                    'promo_label' => 'Final de Estoque',
-                    'promo_start_date' => '2026-07-15', 
-                    'promo_end_date' => '2026-09-01',
-                    'isbn' => '978-65-01-94561-3', 
-                    'publication_date' => '2026-01-01',
-                    'tags' => ['xamã', 'espiritualidade urbana', 'prática xamânica', 'sagrado', 'cotidiano'],
-                ],
-            ],
-        ],
-
-        [
-            'id' => 'apostila-ervas-utilizacoes',
-            'title' => 'Apostila de Ervas e Suas Utilizações',
-            'type' => 'apostila',
-            'description' => 'Uma apostila completa sobre ervas, suas propriedades e aplicações, voltada para práticas espirituais e medicinais.',
-            'accent_color' => '#4be78c',
-            'volumes' => [
-                [
-                    'id' => 'erv-v1', 
-                    'volume_label' => 'Edição completa', 
-                    'subtitle' => 'Guia Prático de Ervas e Suas Aplicações',
-                    'description' => 'Uma apostila completa sobre ervas, suas propriedades e aplicações, voltada para práticas espirituais e medicinais.',
-                    'price' => 48.89,
-                    'promo_active' => 1, 
-                    'promo_type' => 'percent', 
-                    'promo_value' => 5, 
-                    'promo_label' => 'Final de Estoque',
-                    'promo_start_date' => '2026-07-15', 
-                    'promo_end_date' => '2026-09-01',
-                    'isbn' => '978-65-01-94561-3', 
-                    'publication_date' => '2026-01-01',
-                    'tags' => ['ervas', 'propriedades', 'aplicações', 'práticas espirituais', 'medicinais', 'xamanismo', 'umbanda', 'kimbanda', 'candomblé'],
-                ],
-            ],
-        ],       
-        
-        
-
-    ];
-
-    $insCol = $pdo->prepare('INSERT INTO collections (id, title, type, description, accent_color, sort_order) VALUES (?,?,?,?,?,?)');
-    $insVol = $pdo->prepare(
-        'INSERT INTO volumes
-         (id, collection_id, volume_label, subtitle, description, price, promo_active, promo_type, promo_value, promo_label, promo_start_date, promo_end_date, sort_order, isbn, publication_date)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
-    );
-    $insTag = $pdo->prepare('INSERT INTO volume_tags (volume_id, tag) VALUES (?, ?)');
-
-    foreach ($collections as $ci => $col) {
-        $insCol->execute([$col['id'], $col['title'], $col['type'], $col['description'], $col['accent_color'], $ci]);
-        foreach ($col['volumes'] as $vi => $vol) {
-            $insVol->execute([
-                $vol['id'], $col['id'], $vol['volume_label'], $vol['subtitle'], $vol['description'],
-                $vol['price'], $vol['promo_active'], $vol['promo_type'], $vol['promo_value'],
-                $vol['promo_label'], $vol['promo_start_date'], $vol['promo_end_date'], $vi,
-                $vol['isbn'], $vol['publication_date'],
-            ]);
-            foreach ($vol['tags'] as $tag) {
-                $insTag->execute([$vol['id'], $tag]);
-            }
-        }
-    }
 }

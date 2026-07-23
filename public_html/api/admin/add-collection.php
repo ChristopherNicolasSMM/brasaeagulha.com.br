@@ -17,8 +17,8 @@ $title = trim((string) ($input['title'] ?? ''));
 $type = (string) ($input['type'] ?? 'livro');
 $description = trim((string) ($input['description'] ?? ''));
 
-$allowedTypes = ['livro', 'monografia', 'liturgico'];
-$accentMap = ['livro' => '#d4af37', 'monografia' => '#a29c8f', 'liturgico' => '#4d7ea8'];
+$allowedTypes = ['livro', 'monografia', 'liturgico', 'apostila'];
+$accentMap = ['livro' => '#d4af37', 'monografia' => '#a29c8f', 'liturgico' => '#4d7ea8', 'apostila' => '#4be78c'];
 
 if ($title === '' || !in_array($type, $allowedTypes, true)) {
     http_response_code(400);

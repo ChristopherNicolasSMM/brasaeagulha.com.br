@@ -69,6 +69,7 @@ function full(string $siteUrl, string $path): string
   <div class="admin-tabs">
     <a href="/admin/">Catálogo</a>
     <a href="/admin/autores.php">Autores</a>
+    <a href="/admin/tags.php">Tags</a>
     <a href="/admin/cartao.php">Cartão de visita</a>
     <a href="/admin/paginas.php" class="active">Páginas</a>
   </div>

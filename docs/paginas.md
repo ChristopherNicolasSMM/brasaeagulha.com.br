@@ -20,6 +20,7 @@ copiável desses endereços.
 |---|---|
 | `/admin/` | Catálogo — lista de coleções/volumes, modal de criar/editar, adicionar coleção |
 | `/admin/autores.php` | Lista de autores, modal de criar/editar/excluir |
+| `/admin/tags.php` | Lista de tags, modal de criar/editar/inativar |
 | `/admin/cartao.php` | Configurações do cartão de visita/vCard + gerador de QR Code |
 | `/admin/paginas.php` | Central de links (esta lista, mas pra uso no dia a dia) |
 | `/admin/change-password.php` | Trocar a própria senha |
@@ -38,18 +39,30 @@ copiável desses endereços.
 |---|---|
 | `/api/catalogo.php` | Todas as coleções e volumes, com preço já calculado, autor, tags, ISBN etc. |
 | `/api/authors.php` | Lista de autores (id, nome, bio, foto) |
+| `/api/tags.php` | Lista de tags ativas (usada na nuvem de temas) |
 | `/api/settings.php` | Todas as chaves de `site_settings` (usado por `/cartao` e no futuro por qualquer página que precise de telefone/PIX/redes sociais) |
 
 Nenhuma dessas expõe dado sensível — é exatamente o que já é público no
 site/cartão, só em JSON.
 
+## API pública de escrita (POST, sem autenticação — mas com validação)
+
+| Endpoint | Efeito |
+|---|---|
+| `/api/notify-me.php` | Registra pedido de aviso quando um volume `out_of_stock` voltar (e-mail + WhatsApp obrigatórios, aniversário opcional) |
+
 ## API administrativa (POST, exige sessão + token CSRF)
 
 | Endpoint | Efeito |
 |---|---|
-| `/api/admin/save-volume.php` | Cria (id vazio) ou edita (id preenchido) um volume — todos os campos de uma vez |
+| `/api/admin/save-volume.php` | Cria (id vazio) ou edita (id preenchido) um volume — todos os campos de uma vez, incluindo disponibilidade |
 | `/api/admin/delete-volume.php` | Exclui um volume e suas tags |
 | `/api/admin/add-collection.php` | Cria uma coleção |
+| `/api/admin/update-collection.php` | Edita uma coleção existente, incluindo inativar |
+| `/api/admin/catalogo-full.php` | Como `/api/catalogo.php`, mas inclui coleções inativadas (uso exclusivo do admin) |
+| `/api/admin/save-tag.php` | Cria ou edita uma tag, incluindo inativar |
+| `/api/admin/tags-list.php` | Lista completa de tags (ativas e inativas), com contagem de uso |
+| `/api/admin/notify-counts.php` | Quantas pessoas pediram aviso, por volume |
 | `/api/admin/save-author.php` | Cria ou edita um autor |
 | `/api/admin/delete-author.php` | Exclui um autor (os livros dele ficam sem autor, não são apagados) |
 | `/api/admin/update-settings.php` | Atualiza uma ou mais chaves de `site_settings` (lista branca fixa de chaves aceitas) |

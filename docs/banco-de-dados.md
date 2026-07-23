@@ -26,10 +26,11 @@ Trazem*).
 |---|---|---|
 | `id` | TEXT PK | slug, ex. `historias-ventos` |
 | `title` | TEXT | |
-| `type` | TEXT | `livro` \| `monografia` \| `liturgico` |
+| `type` | TEXT | `livro` \| `monografia` \| `liturgico` \| `apostila` |
 | `description` | TEXT | |
 | `accent_color` | TEXT | cor hex usada no site e no admin |
 | `sort_order` | INTEGER | ordem de exibição |
+| `active` | INTEGER (bool) | *(Fase 4)* inativa em vez de apagar — some do site público e do admin de "novo volume", mas os volumes que já tem continuam existindo |
 
 ## `volumes`
 
@@ -55,6 +56,7 @@ central do sistema.
 | `page_count` | INTEGER, nullable | *(Fase 2)* |
 | `publication_date` | TEXT | *(Fase 2)*, formato `AAAA-MM-DD` |
 | `author_id` | TEXT, nullable | *(Fase 2)* FK → `authors.id`, `ON DELETE SET NULL` |
+| `availability` | TEXT | *(Fase 4)* `available` \| `coming_soon` \| `out_of_stock` |
 
 O cálculo de preço final (aplicando a promoção, se ativa e dentro da
 janela de datas) **não** é uma coluna — é calculado em runtime tanto no
@@ -64,13 +66,29 @@ mudar nos dois lugares.
 
 ## `volume_tags`
 
-Relação simples N:N entre volume e tema (tag), sem tabela de tags
-separada — a tag é só o texto.
+Relação N:N entre volume e tema (tag).
 
 | Coluna | Tipo |
 |---|---|
 | `volume_id` | TEXT, FK → `volumes.id`, `ON DELETE CASCADE` |
-| `tag` | TEXT |
+| `tag` | TEXT — nome da tag, mantido por compatibilidade com todo código que já lê `vol.tags` como array de strings |
+| `tag_id` | TEXT, nullable *(Fase 4)* — FK → `tags.id`, `ON DELETE SET NULL` |
+
+## `tags` *(Fase 4)*
+
+Registro central de tags — permite editar nome e inativar num só
+lugar, em vez de string solta espalhada em cada `volume_tags`.
+
+| Coluna | Tipo | Observação |
+|---|---|---|
+| `id` | TEXT PK | slug |
+| `name` | TEXT | nome de exibição |
+| `active` | INTEGER (bool) | inativa = some da nuvem de temas e das sugestões de cadastro, mas continua nos volumes que já a usam |
+| `sort_order` | INTEGER | |
+
+Tag nova é criada automaticamente (`ba_find_or_create_tag()`) sempre
+que alguém salva um volume com uma tag que ainda não existe — não
+precisa cadastrar na tela de Tags antes de usar.
 
 ## `authors` *(Fase 2)*
 
@@ -82,10 +100,24 @@ separada — a tag é só o texto.
 | `photo_url` | TEXT | URL externa, sem upload de arquivo |
 | `sort_order` | INTEGER | |
 
-Semeada com dois registros fixos na primeira execução:
-`kunnigr-afi` e `christopher-mauricio` (ver
-[`arquitetura.md`](arquitetura.md) sobre o guard de migração que evita
-recriá-los se forem apagados de propósito).
+## `stock_interest` *(Fase 4)*
+
+Quem pediu aviso quando um volume `out_of_stock` voltar. Base pra
+campanha de marketing (backlog de tela ainda por construir).
+
+| Coluna | Tipo | Observação |
+|---|---|---|
+| `id` | INTEGER PK | |
+| `volume_id` | TEXT | FK → `volumes.id`, `ON DELETE CASCADE` |
+| `email` | TEXT | |
+| `whatsapp` | TEXT | obrigatório na captura pública |
+| `birthday` | TEXT | opcional, formato `AAAA-MM-DD` |
+| `campaign_sent` | INTEGER (bool) | marca se já foi feito o envio quando o item voltou ao estoque |
+| `campaign_sent_at` | TEXT | |
+| `created_at` | TEXT | |
+
+`UNIQUE(volume_id, email)` — pedir aviso de novo com o mesmo e-mail
+atualiza whatsapp/aniversário em vez de duplicar.
 
 ## `site_settings` *(Fase 1)*
 
@@ -134,6 +166,7 @@ sem relação com as demais.
 Do roadmap de próximas fases — documentado aqui pra quem for
 implementar não precisar redesenhar do zero:
 
+- `volume_images` — fotos por volume (pasta própria, uma marcada como principal)
 - `customers` — cadastro de cliente (nome, e-mail, senha com hash, telefone)
 - `customer_addresses` — vários endereços por cliente, um marcado padrão
 - `orders` / `order_items` — pedidos, com preço e endereço **congelados

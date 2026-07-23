@@ -31,9 +31,14 @@ function renderSidebarCollectionsNav(){
   `).join('');
 }
 
+let ACTIVE_TAG_NAMES = null;
+
 function renderTagCloud(){
   const freq = {};
-  getAllVolumes(COLLECTIONS).forEach(({ vol }) => (vol.tags || []).forEach(t => { freq[t] = (freq[t] || 0) + 1; }));
+  getAllVolumes(COLLECTIONS).forEach(({ vol }) => (vol.tags || []).forEach(t => {
+    if(ACTIVE_TAG_NAMES && !ACTIVE_TAG_NAMES.has(t)) return; // tag inativada: some da nuvem
+    freq[t] = (freq[t] || 0) + 1;
+  }));
   const tags = Object.keys(freq);
   const el = document.getElementById('tagCloud');
   if(!tags.length){ el.innerHTML = '<p class="form-hint">Nenhum tema cadastrado ainda.</p>'; return; }
@@ -92,6 +97,12 @@ function renderHome(){
 }
 
 /* ---------- Cartão de livro ---------- */
+function availabilityBadgePublic(vol){
+  if(vol.availability === 'coming_soon') return '<span class="availability-badge coming-soon">Em breve</span>';
+  if(vol.availability === 'out_of_stock') return '<span class="availability-badge out-of-stock">Sem estoque</span>';
+  return '';
+}
+
 function cardTemplate(vol, col){
   const p = getPricing(vol);
   const accent = col.accentColor || '#d4af37';
@@ -109,6 +120,7 @@ function cardTemplate(vol, col){
           ${(vol.tags || []).slice(0, 4).map(t => `<button type="button" class="tag-pill" data-action="toggle-tag" data-tag="${esc(t)}">${esc(t)}</button>`).join('')}
         </div>
         <div class="price-row">
+          ${availabilityBadgePublic(vol)}
           ${p.hasPromo ? `<span class="price-original">${formatBRL(p.original)}</span>` : ''}
           <span class="price-final">${formatBRL(p.final)}</span>
           ${p.hasPromo ? `<span class="promo-badge">${esc(p.label || 'Promoção')}</span>` : ''}
@@ -205,10 +217,20 @@ function renderBookDetail(volId){
           ${vol.publicationDate ? `<dt>Publicação</dt><dd>${esc(formatDateBR(vol.publicationDate))}</dd>` : ''}
         </dl>
         <div class="book-detail-price">
+          ${availabilityBadgePublic(vol)}
           ${p.hasPromo ? `<span class="price-original">${formatBRL(p.original)}</span>` : ''}
           <span class="price-final">${formatBRL(p.final)}</span>
           ${p.hasPromo ? `<span class="promo-badge">${esc(p.label || 'Promoção')}</span>` : ''}
         </div>
+        ${vol.availability === 'out_of_stock' ? `
+        <form class="notify-form" data-notify-volume="${esc(vol.id)}">
+          <input type="email" name="email" placeholder="seu@email.com" required>
+          <input type="tel" name="whatsapp" placeholder="WhatsApp (com DDD)" required>
+          <input type="date" name="birthday" title="Data de aniversário (opcional)">
+          <button type="submit" class="btn btn-ghost">Avise-me quando chegar</button>
+        </form>
+        <p class="notify-status" id="notifyStatus-${esc(vol.id)}"></p>
+        ` : ''}
         <div class="book-detail-actions">
           <button type="button" class="btn btn-primary" data-action="contact-book" data-volume="${esc(vol.id)}">Entrar em contato sobre esta obra</button>
           <a class="btn btn-ghost" href="#catalogo">Voltar ao catálogo</a>
@@ -294,6 +316,11 @@ async function loadCatalog(){
     const res = await fetch('/api/catalogo.php');
     if(!res.ok) throw new Error('Resposta ' + res.status);
     COLLECTIONS = await res.json();
+    const tagsRes = await fetch('/api/tags.php');
+    if(tagsRes.ok){
+      const activeTags = await tagsRes.json();
+      ACTIVE_TAG_NAMES = new Set(activeTags.map(t => t.name));
+    }
   } catch (err){
     console.error('Falha ao carregar catálogo:', err);
     grid.innerHTML = '<p class="empty-state">Não foi possível carregar o catálogo agora. Tente recarregar a página em instantes.</p>';
@@ -304,6 +331,30 @@ async function loadCatalog(){
 }
 
 /* ---------- Eventos ---------- */
+document.addEventListener('submit', async e => {
+  const form = e.target.closest('[data-notify-volume]');
+  if(!form) return;
+  e.preventDefault();
+  const volumeId = form.dataset.notifyVolume;
+  const email = form.elements['email'].value.trim();
+  const whatsapp = form.elements['whatsapp'].value.trim();
+  const birthday = form.elements['birthday'].value;
+  const statusEl = document.getElementById('notifyStatus-' + volumeId);
+  try {
+    const res = await fetch('/api/notify-me.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ volume_id: volumeId, email, whatsapp, birthday })
+    });
+    const json = await res.json().catch(() => ({}));
+    if(!res.ok) throw new Error(json.error || 'Não foi possível registrar seu aviso.');
+    form.hidden = true;
+    if(statusEl) statusEl.textContent = 'Combinado — avisamos assim que este título voltar ao estoque.';
+  } catch (err){
+    if(statusEl) statusEl.textContent = 'Erro: ' + err.message;
+  }
+});
+
 document.addEventListener('click', e => {
   const actionEl = e.target.closest('[data-action]');
   if(!actionEl) return;

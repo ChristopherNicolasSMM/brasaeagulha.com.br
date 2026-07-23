@@ -28,6 +28,11 @@ $publicationDate = trim((string) ($input['publicationDate'] ?? ''));
 $authorId = trim((string) ($input['authorId'] ?? ''));
 $authorId = $authorId !== '' ? $authorId : null;
 
+$availability = (string) ($input['availability'] ?? 'available');
+if (!in_array($availability, ['available', 'coming_soon', 'out_of_stock'], true)) {
+    $availability = 'available';
+}
+
 $promo = is_array($input['promotion'] ?? null) ? $input['promotion'] : [];
 $promoActive = !empty($promo['active']) ? 1 : 0;
 $promoType = in_array($promo['type'] ?? '', ['percent', 'fixed'], true) ? $promo['type'] : 'percent';
@@ -78,13 +83,13 @@ if ($isNew) {
     $stmt = $pdo->prepare(
         'INSERT INTO volumes
          (id, collection_id, volume_label, subtitle, description, price, sort_order,
-          isbn, language, page_count, publication_date, author_id,
+          isbn, language, page_count, publication_date, author_id, availability,
           promo_active, promo_type, promo_value, promo_label, promo_start_date, promo_end_date)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
     );
     $stmt->execute([
         $id, $collectionId, $volumeLabel, $subtitle, $description, $price, $sortOrder,
-        $isbn, $language, $pageCount, $publicationDate, $authorId,
+        $isbn, $language, $pageCount, $publicationDate, $authorId, $availability,
         $promoActive, $promoType, $promoValue, $promoLabel, $promoStart, $promoEnd,
     ]);
 } else {
@@ -99,13 +104,13 @@ if ($isNew) {
     $stmt = $pdo->prepare(
         'UPDATE volumes SET
             collection_id = ?, volume_label = ?, subtitle = ?, description = ?, price = ?,
-            isbn = ?, language = ?, page_count = ?, publication_date = ?, author_id = ?,
+            isbn = ?, language = ?, page_count = ?, publication_date = ?, author_id = ?, availability = ?,
             promo_active = ?, promo_type = ?, promo_value = ?, promo_label = ?, promo_start_date = ?, promo_end_date = ?
          WHERE id = ?'
     );
     $stmt->execute([
         $collectionId, $volumeLabel, $subtitle, $description, $price,
-        $isbn, $language, $pageCount, $publicationDate, $authorId,
+        $isbn, $language, $pageCount, $publicationDate, $authorId, $availability,
         $promoActive, $promoType, $promoValue, $promoLabel, $promoStart, $promoEnd,
         $id,
     ]);

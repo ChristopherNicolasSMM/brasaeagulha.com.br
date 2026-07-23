@@ -12,6 +12,11 @@ button { font: inherit; }
 
 /* ---------- Tokens de marca ---------- */
 :root{
+  /* Faz o navegador desenhar <select>, <input type=date> e barras de
+     rolagem nativos na variante escura — sem isso, o menu suspenso de
+     um <select> abre com fundo branco por padrão, ilegível no tema
+     escuro do site (afeta Windows/Chrome/Edge principalmente). */
+  color-scheme: dark;
   /* paleta nomeada */
   --ink-night:   #12283a;   /* fundo, céu noturno */
   --ash-blue:    #16324a;   /* superfícies/painéis */
@@ -180,6 +185,18 @@ textarea:focus-visible, select:focus-visible, summary:focus-visible{
 }
 .collection-nav-link:hover{ background: rgba(212,175,55,.08); text-decoration:none; color: var(--snow); }
 .collection-nav-link.active{ border-left-color: var(--gold-ember); color: var(--gold-ember); }
+
+/* Barra de rolagem fina e no tom do tema, em vez do padrão cinza-grosso
+   do navegador (aparece na sidebar quando a lista de temas cresce, e em
+   qualquer outra área com overflow). */
+*{
+  scrollbar-width: thin;
+  scrollbar-color: rgba(212,175,55,.4) transparent;
+}
+*::-webkit-scrollbar{ width: 8px; height: 8px; }
+*::-webkit-scrollbar-track{ background: transparent; }
+*::-webkit-scrollbar-thumb{ background: rgba(212,175,55,.35); border-radius: 999px; }
+*::-webkit-scrollbar-thumb:hover{ background: rgba(212,175,55,.55); }
 
 .tag-cloud{ display:flex; flex-wrap:wrap; gap:.4em .5em; }
 .tag-pill{
@@ -449,6 +466,67 @@ main{ flex:1; padding: 2.4rem 2rem 3rem; max-width: 1180px; width:100%; margin:0
 .btn-danger{ background:transparent; border:1px solid rgba(154,52,18,.5); color:#e8a486; }
 .btn-danger:hover{ background:rgba(154,52,18,.15); }
 .modal-status{ font-family: var(--font-ui); font-size:.78rem; color: var(--snow-muted); }
+
+/* ---------- Campo de tags (chips + sugestão) ---------- */
+.tag-input{
+  display:flex; flex-wrap:wrap; gap:.4em; align-items:center;
+  background: rgba(255,255,255,.05); border:1px solid rgba(212,175,55,.28);
+  border-radius:8px; padding:.5em .6em; position:relative;
+}
+.tag-input-chip{
+  display:inline-flex; align-items:center; gap:.35em; background: rgba(212,175,55,.18);
+  border:1px solid rgba(212,175,55,.4); color: var(--snow); border-radius:999px;
+  padding:.2em .3em .2em .7em; font-family: var(--font-ui); font-size:.82rem;
+}
+.tag-input-chip button{
+  background:none; border:none; color: var(--snow-muted); cursor:pointer; font-size:1rem;
+  line-height:1; padding:.1em .3em; border-radius:50%;
+}
+.tag-input-chip button:hover{ color: var(--gold-ember); background: rgba(0,0,0,.2); }
+.tag-input-field{
+  flex:1; min-width:120px; background:none; border:none; color: var(--snow);
+  font-family: var(--font-body); font-size:.92rem; padding:.25em;
+}
+.tag-input-field:focus{ outline:none; }
+.tag-input-suggestions{
+  position:absolute; top:100%; left:0; right:0; margin-top:.3em; z-index:5;
+  background: var(--ash-blue-2); border:1px solid rgba(212,175,55,.35); border-radius:8px;
+  box-shadow: var(--shadow-2); max-height:180px; overflow-y:auto;
+}
+.tag-input-suggestion{
+  display:block; width:100%; text-align:left; background:none; border:none;
+  color: var(--snow); font-family: var(--font-ui); font-size:.85rem; padding:.5em .8em; cursor:pointer;
+}
+.tag-input-suggestion:hover, .tag-input-suggestion.active{ background: rgba(212,175,55,.15); }
+
+/* ---------- Seletor de cor ---------- */
+input[type="color"]{
+  padding:.2em; height:2.4em; background: rgba(255,255,255,.05);
+  border:1px solid rgba(212,175,55,.28); border-radius:8px; cursor:pointer;
+}
+
+/* ---------- Disponibilidade ---------- */
+.availability-badge{
+  display:inline-block; font-family: var(--font-ui); font-size:.7rem; font-weight:700;
+  letter-spacing:.03em; padding:.25em .6em; border-radius:5px;
+}
+.availability-badge.coming-soon{ background: rgba(77,126,168,.25); color:#a9cbe4; border:1px solid rgba(77,126,168,.5); }
+.availability-badge.out-of-stock{ background: rgba(154,52,18,.2); color:#e8a486; border:1px solid rgba(154,52,18,.5); }
+
+.notify-form{ display:flex; gap:.6em; flex-wrap:wrap; margin-top:.8em; }
+.notify-form input{
+  flex:1; min-width:140px; font-family: var(--font-body); font-size:.9rem; color: var(--snow);
+  background: rgba(255,255,255,.05); border:1px solid rgba(212,175,55,.28); border-radius:8px; padding:.55em .8em;
+}
+.notify-status{ font-family: var(--font-ui); font-size:.82rem; color: var(--gold-soft); margin-top:.5em; }
+
+/* ---------- Agrupamento visual do modal ---------- */
+.modal-fieldset{ margin-bottom:1.4em; border:none; padding:0; }
+.modal-fieldset legend{
+  font-family: var(--font-ui); text-transform:uppercase; letter-spacing:.1em;
+  font-size:.72rem; color: var(--gold-soft); margin-bottom:.7em; padding:0;
+  border-bottom:1px solid rgba(212,175,55,.15); padding-bottom:.4em; width:100%;
+}
 
 /* Modal reutilizável (edição/criação de volume e de autor) */
 dialog.admin-modal{

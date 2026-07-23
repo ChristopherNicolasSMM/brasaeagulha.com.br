@@ -16,10 +16,17 @@ catálogo e o hash da senha do admin. Por isso ele mora fora.
 
 ## Conexão com o banco: `ba_db()`
 
-Toda a lógica de banco vive em `src/db.php`. A função central é
-`ba_db()`, chamada no topo de praticamente todo arquivo PHP (via
-`require config.php`, que por sua vez inclui `src/db.php`). Ela faz
-duas coisas em **toda chamada**, não só na primeira:
+Toda a lógica de banco vive em `src/db.php` — **exceto os dados
+iniciais do catálogo**, que ficam em `src/seed-data.php` (função
+`ba_seed_catalog()`), separado de propósito: esse arquivo só é lido
+(`require_once`) na primeira execução, quando a tabela `collections`
+está vazia. Depois disso, ele nunca mais é processado em nenhuma
+requisição — só existe pra popular um site novo.
+
+A função central de `db.php` é `ba_db()`, chamada no topo de
+praticamente todo arquivo PHP (via `require config.php`, que por sua
+vez inclui `src/db.php`). Ela faz duas coisas em **toda chamada**, não
+só na primeira:
 
 ```php
 ba_ensure_schema($pdo);   // cria tabelas/colunas que ainda não existem
@@ -69,6 +76,20 @@ function ba_mark_migration_done(PDO $pdo, string $key): void { /* ... */ }
 "criar algo que não existe" (por exemplo: preencher um valor padrão que
 o usuário pode legitimamente querer apagar ou mudar depois) precisa
 desse guard. Só "criar tabela/coluna vazia" dispensa — o resto, não.
+
+## Inativação em vez de exclusão (a partir da Fase 4)
+
+Tags e coleções usam uma coluna `active` (`1`/`0`) em vez de `DELETE`.
+"Excluir" nessas telas é só desmarcar `active` — os dados continuam no
+banco, ligados a tudo que já os usava, só somem do que é **novo**
+(sugestões de tag, catálogo público, seletor de coleção pra criar
+volume). Volumes e autores, por enquanto, continuam com exclusão de
+verdade (`DELETE`) — não foram migrados pro mesmo padrão ainda; se
+fizer sentido mudar, é uma alteração pequena e isolada.
+
+Ao adicionar uma tela de gestão nova pra qualquer outra tabela, o
+padrão esperado é o mesmo: coluna `active` + toggle no formulário, não
+um botão de excluir que apaga a linha.
 
 ## Autenticação e sessão (`src/auth.php`)
 
