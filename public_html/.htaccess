@@ -11,7 +11,7 @@ Options -Indexes
 
 # Bloqueia acesso direto a qualquer arquivo de banco de dados, caso seja
 # colocado aqui por engano (o correto é manter fora de public_html,
-# como explicado no LEIA-ME.md)
+# como explicado no README.md)
 <FilesMatch "\.(sqlite|sqlite3|db)$">
   Require all denied
 </FilesMatch>
