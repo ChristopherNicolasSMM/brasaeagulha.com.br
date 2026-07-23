@@ -278,6 +278,24 @@ function ba_seed_catalog(PDO $pdo): void
 {
     $collections = [
         [
+            'id' => 'compendio-futhark',
+            'title' => 'Compêndio do Futhark Antigo',
+            'type' => 'livro',
+            'description' => 'Das origens cósmicas à práxis oracular e mágica — estudo completo do Futhark Antigo pelos três Ætts (Freyr e Freyja, Heimdallr, Týr), com rigor conceitual e aplicação prática, incluindo o sistema autoral de Galdr e vibroturgia do destino.',
+            'accent_color' => '#a29c8f',
+            'volumes' => [
+                [
+                    'id' => 'cf-v1', 'volume_label' => 'Edição completa', 'subtitle' => 'Das Origens Cósmicas à Práxis Oracular e Mágica',
+                    'description' => 'Os três Ætts do Futhark Antigo — de Freyr e Freyja à soberania de Týr —, o Galdr como arquitetura do som primordial, a arte oracular e a ética do Wyrd, e a prática mágica com runas. Traz tabelas de referência rápida, glossário norrænt-português, glossário conceitual rúnico e índice remissivo.',
+                    'price' => 142.90,
+                    'promo_active' => 1, 'promo_type' => 'fixed', 'promo_value' => 10, 'promo_label' => 'Lançamento',
+                    'promo_start_date' => '2026-07-15', 'promo_end_date' => '2026-09-01',
+                    'isbn' => '978-65-01-94561-3', 'publication_date' => '2026-01-01',
+                    'tags' => ['Futhark', 'runas', 'Galdr', 'Wyrd', 'oráculo'],
+                ],
+            ],
+        ],        
+        [
             'id' => 'historias-ventos',
             'title' => 'As Histórias que os Ventos Trazem',
             'type' => 'livro',
@@ -287,8 +305,8 @@ function ba_seed_catalog(PDO $pdo): void
                 [
                     'id' => 'hv-v1', 'volume_label' => 'Volume I', 'subtitle' => 'Das Origens ao Tear do Destino',
                     'description' => 'Do fogo e do gelo ao nascimento das Nove Terras: Ymir, Auðhumbla, a árvore Yggdrasil e o surgimento dos primeiros humanos, Ask e Embla. Encerra com as Nornas e o Tear do Destino — Wyrd, Örlög, Hamingja e o que essas ideias significam de verdade.',
-                    'price' => 79.90,
-                    'promo_active' => 1, 'promo_type' => 'percent', 'promo_value' => 15, 'promo_label' => 'Lançamento',
+                    'price' => 39.87,
+                    'promo_active' => 1, 'promo_type' => 'fixed', 'promo_value' => 5,90, 'promo_label' => 'Lançamento',
                     'promo_start_date' => '2026-06-01', 'promo_end_date' => '2026-09-01',
                     'isbn' => '', 'publication_date' => '2026-01-01',
                     'tags' => ['cosmogonia', 'Yggdrasil', 'Nornir', 'Wyrd', 'Örlög'],
@@ -296,7 +314,7 @@ function ba_seed_catalog(PDO $pdo): void
                 [
                     'id' => 'hv-v2', 'volume_label' => 'Volume II', 'subtitle' => 'Os Deuses da Ordem',
                     'description' => 'Óðinn, o Pai de Todos; Þórr, o Defensor; Týr, o Sacrificado; Baldr, o Brilhante; e os demais Æsir — encerrando com a Guerra Æsir-Vanir e a grande troca que redesenhou o panteão nórdico.',
-                    'price' => 79.90,
+                    'price' => 99.90,
                     'promo_active' => 0, 'promo_type' => 'percent', 'promo_value' => 0, 'promo_label' => '',
                     'promo_start_date' => '', 'promo_end_date' => '',
                     'isbn' => '', 'publication_date' => '',
@@ -305,7 +323,7 @@ function ba_seed_catalog(PDO $pdo): void
                 [
                     'id' => 'hv-v3', 'volume_label' => 'Volume III', 'subtitle' => 'Criaturas, Heróis e Sagas',
                     'description' => 'Freyja e Freyr, Njörðr e os ventos do mar, Loki o Cambiante, os gigantes, os anões artífices, elfos e espíritos da terra — e a saga de Sigurðr, o Matador de Dragões, entre outras histórias de coragem.',
-                    'price' => 79.90,
+                    'price' => 99.90,
                     'promo_active' => 0, 'promo_type' => 'percent', 'promo_value' => 0, 'promo_label' => '',
                     'promo_start_date' => '', 'promo_end_date' => '',
                     'isbn' => '', 'publication_date' => '',
@@ -314,29 +332,11 @@ function ba_seed_catalog(PDO $pdo): void
                 [
                     'id' => 'hv-v4', 'volume_label' => 'Volume IV', 'subtitle' => 'Sabedoria, Magia e o Fogo Eterno',
                     'description' => 'As runas como alfabeto dos sussurros, magia e práticas espirituais, os ritos do ano sagrado e as palavras do Hávamál — encerrando com Wyrd aplicado à vida hoje. Traz também glossário, guia de pronúncia, linha do tempo mítica e mapa dos Nove Mundos.',
-                    'price' => 84.90,
+                    'price' => 99.90,
                     'promo_active' => 0, 'promo_type' => 'percent', 'promo_value' => 0, 'promo_label' => '',
                     'promo_start_date' => '', 'promo_end_date' => '',
                     'isbn' => '', 'publication_date' => '',
                     'tags' => ['runas', 'Hávamál', 'magia', 'rituais'],
-                ],
-            ],
-        ],
-        [
-            'id' => 'compendio-futhark',
-            'title' => 'Compêndio do Futhark Antigo',
-            'type' => 'monografia',
-            'description' => 'Das origens cósmicas à práxis oracular e mágica — estudo completo do Futhark Antigo pelos três Ætts (Freyr e Freyja, Heimdallr, Týr), com rigor conceitual e aplicação prática, incluindo o sistema autoral de Galdr e vibroturgia do destino.',
-            'accent_color' => '#a29c8f',
-            'volumes' => [
-                [
-                    'id' => 'cf-v1', 'volume_label' => 'Edição completa', 'subtitle' => 'Das Origens Cósmicas à Práxis Oracular e Mágica',
-                    'description' => 'Os três Ætts do Futhark Antigo — de Freyr e Freyja à soberania de Týr —, o Galdr como arquitetura do som primordial, a arte oracular e a ética do Wyrd, e a prática mágica com runas. Traz tabelas de referência rápida, glossário norrænt-português, glossário conceitual rúnico e índice remissivo.',
-                    'price' => 129.90,
-                    'promo_active' => 1, 'promo_type' => 'fixed', 'promo_value' => 15, 'promo_label' => 'Lançamento',
-                    'promo_start_date' => '2026-07-15', 'promo_end_date' => '2026-09-01',
-                    'isbn' => '978-65-01-94561-3', 'publication_date' => '2026-01-01',
-                    'tags' => ['Futhark', 'runas', 'Galdr', 'Wyrd', 'oráculo'],
                 ],
             ],
         ],
@@ -350,27 +350,18 @@ function ba_seed_catalog(PDO $pdo): void
                 [
                     'id' => 'bn-v1', 'volume_label' => 'Volume único', 'subtitle' => 'Ritos de Abertura e Encerramento',
                     'description' => 'A Porta do Vé, a preparação do espaço e as fórmulas de fechamento — a estrutura completa de um rito pessoal.',
-                    'price' => 59.90,
+                    'price' => 19.90,
                     'promo_active' => 0, 'promo_type' => 'percent', 'promo_value' => 0, 'promo_label' => '',
                     'promo_start_date' => '', 'promo_end_date' => '',
                     'isbn' => '', 'publication_date' => '',
-                    'tags' => ['ritual', 'Vé'],
-                ],
-                [
-                    'id' => 'bn-v2', 'volume_label' => 'Volume II', 'subtitle' => 'Consulta das Runas',
-                    'description' => 'Orientações para a leitura ritual — preparação, lançamento e interpretação, sem promessas, com responsabilidade.',
-                    'price' => 64.90,
-                    'promo_active' => 1, 'promo_type' => 'percent', 'promo_value' => 10, 'promo_label' => 'Lançamento',
-                    'promo_start_date' => '2026-07-01', 'promo_end_date' => '2026-08-15',
-                    'isbn' => '', 'publication_date' => '',
-                    'tags' => ['runas', 'Nornir'],
-                ],
+                    'tags' => ['ritual', 'Vé', 'runas', 'magia', 'oração']
+                ]
             ],
         ],
         [
             'id' => 'linguagem-da-chama',
             'title' => 'A Linguagem da Chama',
-            'type' => 'monografia',
+            'type' => 'livro',
             'description' => 'Fazer, consagrar e manter aceso — um manual prático de ofício do fogo: lamparinas, velas, incensos e ervas, com segurança e critério do início ao fim. Ainda em revisão.',
             'accent_color' => '#9a3412',
             'volumes' => [
